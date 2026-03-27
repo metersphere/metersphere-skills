@@ -123,6 +123,8 @@ cd ~/.openclaw/workspace/skills/metersphere
 ./scripts/ms.sh case-review-module list <projectId>
 ./scripts/ms.sh case-review-user list <projectId>
 ./scripts/ms.sh reviewed-summary <projectId> [keyword]
+./scripts/ms.sh case-report <projectId> <caseId>
+./scripts/ms.sh case-report-md <projectId> <caseId>
 ```
 
 ### 如何判断哪些功能用例被评审过
@@ -138,6 +140,8 @@ cd ~/.openclaw/workspace/skills/metersphere
 
 - `reviewed-summary` 会遍历项目内功能用例，并通过 `functional-case/review/page` 反查每条用例是否参与过评审
 - 返回 `reviewed: true/false`，并附带它参与过的评审单列表
+- `case-report` 返回单条用例的结构化 JSON：详情 + 缺陷 + 评审记录
+- `case-report-md` 返回单条用例的 Markdown 报告，更适合直接发给用户
 - 如果想从评审单维度查看，再用：
 
 ```bash

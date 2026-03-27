@@ -225,6 +225,8 @@ ms — MeterSphere CLI
   ms api batch-create <json-file>
   ms api import-create <projectId> <moduleId> <openapi-file-or-url>
   ms reviewed-summary <projectId> [keyword]
+  ms case-report <projectId> <caseId>
+  ms case-report-md <projectId> <caseId>
 
 资源:
   organization
@@ -303,6 +305,24 @@ if [[ "$cmd" == "reviewed-summary" ]]; then
   keyword="${2:-}"
   [[ -n "$project_id" ]] || die "reviewed-summary 需要 projectId"
   python3 "$SCRIPT_DIR/ms_review_summary.py" "$project_id" "$keyword"
+  exit 0
+fi
+
+if [[ "$cmd" == "case-report" ]]; then
+  project_id="${1:-${METERSPHERE_PROJECT_ID:-}}"
+  case_id="${2:-}"
+  [[ -n "$project_id" ]] || die "case-report 需要 projectId"
+  [[ -n "$case_id" ]] || die "case-report 需要 caseId"
+  python3 "$SCRIPT_DIR/ms_case_report.py" "$project_id" "$case_id"
+  exit 0
+fi
+
+if [[ "$cmd" == "case-report-md" ]]; then
+  project_id="${1:-${METERSPHERE_PROJECT_ID:-}}"
+  case_id="${2:-}"
+  [[ -n "$project_id" ]] || die "case-report-md 需要 projectId"
+  [[ -n "$case_id" ]] || die "case-report-md 需要 caseId"
+  python3 "$SCRIPT_DIR/ms_case_report_md.py" "$project_id" "$case_id"
   exit 0
 fi
 

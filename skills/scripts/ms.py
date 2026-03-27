@@ -188,6 +188,8 @@ def usage():
   ms <resource> <action> [args...]
   ms raw <METHOD> <PATH> [JSON]
   ms reviewed-summary <projectId> [keyword]
+  ms case-report <projectId> <caseId>
+  ms case-report-md <projectId> <caseId>
 
 资源:
   organization
