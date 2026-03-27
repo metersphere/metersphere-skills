@@ -76,14 +76,38 @@ def case_reviews(case_id: str):
     return data.get('list') or []
 
 
+def _bug_key(bug: dict):
+    return bug.get('bugId') or bug.get('id') or bug.get('num') or json.dumps(bug, ensure_ascii=False, sort_keys=True)
+
+
 def case_bugs(project_id: str, case_id: str):
-    data = post_json('/functional/case/test/associate/bug/page', {
+    lists = []
+
+    data1 = post_json('/functional/case/test/associate/bug/page', {
         'projectId': project_id,
         'sourceId': case_id,
         'current': 1,
         'pageSize': 100,
     }).get('data') or {}
-    return data.get('list') or []
+    lists.extend(data1.get('list') or [])
+
+    data2 = post_json('/functional/case/test/has/associate/bug/page', {
+        'projectId': project_id,
+        'caseId': case_id,
+        'testPlanCaseId': '',
+        'current': 1,
+        'pageSize': 100,
+    }).get('data') or {}
+    lists.extend(data2.get('list') or [])
+
+    merged = {}
+    for bug in lists:
+        key = _bug_key(bug)
+        if key not in merged:
+            merged[key] = bug
+        else:
+            merged[key] = {**merged[key], **{k: v for k, v in bug.items() if v not in (None, '', [], {})}}
+    return list(merged.values())
 
 
 def build_summary(detail: dict, bugs: list, reviews: list):
@@ -100,7 +124,7 @@ def build_summary(detail: dict, bugs: list, reviews: list):
         'functionalPriority': detail.get('functionalPriority'),
         'reviewStatus': detail.get('reviewStatus'),
         'lastExecuteResult': detail.get('lastExecuteResult'),
-        'bugCount': detail.get('bugCount', len(bugs)),
+        'bugCount': max(int(detail.get('bugCount') or 0), len(bugs)),
         'caseReviewCount': detail.get('caseReviewCount', len(reviews)),
         'testPlanCount': detail.get('testPlanCount', 0),
         'demandCount': detail.get('demandCount', 0),
