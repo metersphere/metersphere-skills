@@ -37,6 +37,13 @@ PROJECT_LIST_BY_ORG_PATH = os.environ.get('METERSPHERE_PROJECT_LIST_BY_ORG_PATH'
 FUNCTIONAL_MODULE_TREE_PATH = os.environ.get('METERSPHERE_FUNCTIONAL_MODULE_TREE_PATH', '/functional/case/module/tree/{projectId}')
 FUNCTIONAL_TEMPLATE_FIELD_PATH = os.environ.get('METERSPHERE_FUNCTIONAL_TEMPLATE_FIELD_PATH', '/functional/case/default/template/field/{projectId}')
 API_MODULE_TREE_PATH = os.environ.get('METERSPHERE_API_MODULE_TREE_PATH', '/api/definition/module/tree')
+FUNCTIONAL_CASE_REVIEW_LIST_PATH = os.environ.get('METERSPHERE_FUNCTIONAL_CASE_REVIEW_LIST_PATH', '/functional/case/review/page')
+CASE_REVIEW_LIST_PATH = os.environ.get('METERSPHERE_CASE_REVIEW_LIST_PATH', '/case/review/page')
+CASE_REVIEW_GET_PATH = os.environ.get('METERSPHERE_CASE_REVIEW_GET_PATH', '/case/review/detail/{id}')
+CASE_REVIEW_CREATE_PATH = os.environ.get('METERSPHERE_CASE_REVIEW_CREATE_PATH', '/case/review/add')
+CASE_REVIEW_DETAIL_PAGE_PATH = os.environ.get('METERSPHERE_CASE_REVIEW_DETAIL_PAGE_PATH', '/case/review/detail/page')
+CASE_REVIEW_MODULE_TREE_PATH = os.environ.get('METERSPHERE_CASE_REVIEW_MODULE_TREE_PATH', '/case/review/module/tree/{projectId}')
+CASE_REVIEW_USER_OPTION_PATH = os.environ.get('METERSPHERE_CASE_REVIEW_USER_OPTION_PATH', '/case/review/user-option/{projectId}')
 
 PATHS = {
     'organization': {'list': ORGANIZATION_LIST_PATH, 'get': '', 'create': ''},
@@ -48,6 +55,31 @@ PATHS = {
         'list': os.environ.get('METERSPHERE_FUNCTIONAL_CASE_LIST_PATH', '/functional/case/page'),
         'get': os.environ.get('METERSPHERE_FUNCTIONAL_CASE_GET_PATH', '/functional/case/detail/{id}'),
         'create': os.environ.get('METERSPHERE_FUNCTIONAL_CASE_CREATE_PATH', '/functional/case/add'),
+    },
+    'functional-case-review': {
+        'list': FUNCTIONAL_CASE_REVIEW_LIST_PATH,
+        'get': '',
+        'create': '',
+    },
+    'case-review': {
+        'list': CASE_REVIEW_LIST_PATH,
+        'get': CASE_REVIEW_GET_PATH,
+        'create': CASE_REVIEW_CREATE_PATH,
+    },
+    'case-review-detail': {
+        'list': CASE_REVIEW_DETAIL_PAGE_PATH,
+        'get': '',
+        'create': '',
+    },
+    'case-review-module': {
+        'list': CASE_REVIEW_MODULE_TREE_PATH,
+        'get': '',
+        'create': '',
+    },
+    'case-review-user': {
+        'list': CASE_REVIEW_USER_OPTION_PATH,
+        'get': '',
+        'create': '',
     },
     'api': {
         'list': os.environ.get('METERSPHERE_API_DEFINITION_LIST_PATH', '/api/definition/page'),
@@ -155,6 +187,7 @@ def usage():
 用法:
   ms <resource> <action> [args...]
   ms raw <METHOD> <PATH> [JSON]
+  ms reviewed-summary <projectId> [keyword]
 
 资源:
   organization
@@ -163,6 +196,11 @@ def usage():
   functional-template
   api-module
   functional-case
+  functional-case-review
+  case-review
+  case-review-detail
+  case-review-module
+  case-review-user
   api
   api-case
 
@@ -181,6 +219,12 @@ def usage():
   ms functional-template list 100001100001
   ms api-module list 100001100001
   ms functional-case list 登录
+  ms functional-case-review list '{"caseId":"922301316472832"}'
+  ms case-review list '{"projectId":"1163437937827840"}'
+  ms case-review get 922833892417536
+  ms case-review-detail list '{"projectId":"1163437937827840","reviewId":"922833892417536","viewStatusFlag":false}'
+  ms case-review-module list 1163437937827840
+  ms case-review-user list 1163437937827840
 ''')
 
 
@@ -242,6 +286,16 @@ def main():
             if not project_id:
                 die('api-module list 需要 projectId')
             do_request('POST', API_MODULE_TREE_PATH, {'projectId': project_id, 'protocols': json.loads(PROTOCOLS_JSON)})
+        elif resource == 'case-review-module':
+            project_id = arg or PROJECT_ID
+            if not project_id:
+                die('case-review-module list 需要 projectId')
+            do_request('GET', CASE_REVIEW_MODULE_TREE_PATH.replace('{projectId}', project_id))
+        elif resource == 'case-review-user':
+            project_id = arg or PROJECT_ID
+            if not project_id:
+                die('case-review-user list 需要 projectId')
+            do_request('GET', CASE_REVIEW_USER_OPTION_PATH.replace('{projectId}', project_id))
         else:
             body = normalize_payload(resource, arg) if arg.startswith('{') else default_list_payload(resource, arg)
             do_request('POST', PATHS[resource]['list'], body)

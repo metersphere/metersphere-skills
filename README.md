@@ -108,7 +108,7 @@ cd ~/.openclaw/workspace/skills/metersphere
 
 # 主要能力
 
-## 1) 查询组织 / 项目 / 模块 / 模板
+## 1) 查询组织 / 项目 / 模块 / 模板 / 评审
 
 ```bash
 ./scripts/ms.sh organization list
@@ -116,6 +116,33 @@ cd ~/.openclaw/workspace/skills/metersphere
 ./scripts/ms.sh functional-module list <projectId>
 ./scripts/ms.sh functional-template list <projectId>
 ./scripts/ms.sh api-module list <projectId>
+./scripts/ms.sh functional-case-review list '{"caseId":"<功能用例ID>"}'
+./scripts/ms.sh case-review list '{"projectId":"<项目ID>"}'
+./scripts/ms.sh case-review get <reviewId>
+./scripts/ms.sh case-review-detail list '{"projectId":"<项目ID>","reviewId":"<评审ID>","viewStatusFlag":false}'
+./scripts/ms.sh case-review-module list <projectId>
+./scripts/ms.sh case-review-user list <projectId>
+./scripts/ms.sh reviewed-summary <projectId> [keyword]
+```
+
+### 如何判断哪些功能用例被评审过
+
+最直接的命令：
+
+```bash
+./scripts/ms.sh reviewed-summary <projectId>
+./scripts/ms.sh reviewed-summary <projectId> 登录
+```
+
+说明：
+
+- `reviewed-summary` 会遍历项目内功能用例，并通过 `functional-case/review/page` 反查每条用例是否参与过评审
+- 返回 `reviewed: true/false`，并附带它参与过的评审单列表
+- 如果想从评审单维度查看，再用：
+
+```bash
+./scripts/ms.sh case-review list '{"projectId":"<项目ID>"}'
+./scripts/ms.sh case-review-detail list '{"projectId":"<项目ID>","reviewId":"<评审ID>","viewStatusFlag":false}'
 ```
 
 ## 2) 需求 → 功能用例

@@ -80,7 +80,56 @@ references/ai-api-bundle-prompt.md
 - `GET /functional/case/default/template/field/{projectId}`
 - `POST /api/definition/module/tree`
 
-## 7. 当前限制
+## 7. 功能用例评审相关接口
+
+已确认可用的 case-management 评审相关接口包括：
+
+- `POST /functional/case/review/page`
+  - 从**功能用例视角**查询它参与过哪些评审
+  - 适合回答：某条用例有没有被评审过
+- `POST /case/review/page`
+  - 查询项目下评审单列表
+  - 返回 `reviewedCount / unReviewCount / underReviewedCount / passCount / unPassCount`
+- `GET /case/review/detail/{id}`
+  - 查询单个评审单详情
+- `POST /case/review/detail/page`
+  - 查询某评审单下已关联的功能用例列表
+  - 每条记录包含 `status / myStatus / reviewers / reviewNames`
+- `GET /case/review/module/tree/{projectId}`
+  - 查询评审模块树
+- `GET /case/review/user-option/{projectId}`
+  - 查询具备评审权限的用户列表
+- `GET /case/review/detail/reviewer/status/{reviewId}/{caseId}`
+- `GET /case/review/detail/reviewer/status/total/{reviewId}/{caseId}`
+  - 查询单条用例在评审中的人和状态汇总
+- `GET /review/functional/case/get/list/{reviewId}/{caseId}`
+  - 查询单条用例在某次评审中的评审历史
+
+## 8. 如何判断“哪些用例被评审过”
+
+推荐两种口径：
+
+### 口径 A：功能用例维度（最适合用户问答）
+
+对项目下每条功能用例调用：
+
+- `POST /functional/case/review/page`
+
+若返回列表非空，则该用例**被评审过**；否则可视为**未被评审过**。
+
+### 口径 B：评审单维度
+
+先查：
+
+- `POST /case/review/page`
+
+再对每个评审单查：
+
+- `POST /case/review/detail/page`
+
+可以得到“某个评审单里有哪些用例、每条用例当前评审状态”。
+
+## 9. 当前限制
 
 - 更细粒度 JSONPath 断言仍建议由 AI 增强阶段补充
 - 当前本地生成仍以稳定、可落库为优先

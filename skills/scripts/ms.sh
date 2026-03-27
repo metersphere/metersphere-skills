@@ -29,6 +29,13 @@ METERSPHERE_PROTOCOLS_JSON="${METERSPHERE_PROTOCOLS_JSON:-[\"HTTP\"]}"
 [[ -n "${METERSPHERE_FUNCTIONAL_CASE_LIST_PATH:-}" ]] || METERSPHERE_FUNCTIONAL_CASE_LIST_PATH='/functional/case/page'
 [[ -n "${METERSPHERE_FUNCTIONAL_CASE_GET_PATH:-}" ]] || METERSPHERE_FUNCTIONAL_CASE_GET_PATH='/functional/case/detail/{id}'
 [[ -n "${METERSPHERE_FUNCTIONAL_CASE_CREATE_PATH:-}" ]] || METERSPHERE_FUNCTIONAL_CASE_CREATE_PATH='/functional/case/add'
+[[ -n "${METERSPHERE_FUNCTIONAL_CASE_REVIEW_LIST_PATH:-}" ]] || METERSPHERE_FUNCTIONAL_CASE_REVIEW_LIST_PATH='/functional/case/review/page'
+[[ -n "${METERSPHERE_CASE_REVIEW_LIST_PATH:-}" ]] || METERSPHERE_CASE_REVIEW_LIST_PATH='/case/review/page'
+[[ -n "${METERSPHERE_CASE_REVIEW_GET_PATH:-}" ]] || METERSPHERE_CASE_REVIEW_GET_PATH='/case/review/detail/{id}'
+[[ -n "${METERSPHERE_CASE_REVIEW_CREATE_PATH:-}" ]] || METERSPHERE_CASE_REVIEW_CREATE_PATH='/case/review/add'
+[[ -n "${METERSPHERE_CASE_REVIEW_DETAIL_PAGE_PATH:-}" ]] || METERSPHERE_CASE_REVIEW_DETAIL_PAGE_PATH='/case/review/detail/page'
+[[ -n "${METERSPHERE_CASE_REVIEW_MODULE_TREE_PATH:-}" ]] || METERSPHERE_CASE_REVIEW_MODULE_TREE_PATH='/case/review/module/tree/{projectId}'
+[[ -n "${METERSPHERE_CASE_REVIEW_USER_OPTION_PATH:-}" ]] || METERSPHERE_CASE_REVIEW_USER_OPTION_PATH='/case/review/user-option/{projectId}'
 [[ -n "${METERSPHERE_API_DEFINITION_LIST_PATH:-}" ]] || METERSPHERE_API_DEFINITION_LIST_PATH='/api/definition/page'
 [[ -n "${METERSPHERE_API_DEFINITION_GET_PATH:-}" ]] || METERSPHERE_API_DEFINITION_GET_PATH='/api/definition/get-detail/{id}'
 [[ -n "${METERSPHERE_API_DEFINITION_CREATE_PATH:-}" ]] || METERSPHERE_API_DEFINITION_CREATE_PATH='/api/definition/add'
@@ -177,6 +184,21 @@ resource_paths() {
     functional-case)
       echo "$METERSPHERE_FUNCTIONAL_CASE_LIST_PATH|$METERSPHERE_FUNCTIONAL_CASE_GET_PATH|$METERSPHERE_FUNCTIONAL_CASE_CREATE_PATH"
       ;;
+    functional-case-review)
+      echo "$METERSPHERE_FUNCTIONAL_CASE_REVIEW_LIST_PATH||"
+      ;;
+    case-review)
+      echo "$METERSPHERE_CASE_REVIEW_LIST_PATH|$METERSPHERE_CASE_REVIEW_GET_PATH|$METERSPHERE_CASE_REVIEW_CREATE_PATH"
+      ;;
+    case-review-detail)
+      echo "$METERSPHERE_CASE_REVIEW_DETAIL_PAGE_PATH||"
+      ;;
+    case-review-module)
+      echo "$METERSPHERE_CASE_REVIEW_MODULE_TREE_PATH||"
+      ;;
+    case-review-user)
+      echo "$METERSPHERE_CASE_REVIEW_USER_OPTION_PATH||"
+      ;;
     api)
       echo "$METERSPHERE_API_DEFINITION_LIST_PATH|$METERSPHERE_API_DEFINITION_GET_PATH|$METERSPHERE_API_DEFINITION_CREATE_PATH"
       ;;
@@ -202,6 +224,7 @@ ms — MeterSphere CLI
   ms api import-generate <projectId> <moduleId> <openapi-file-or-url>
   ms api batch-create <json-file>
   ms api import-create <projectId> <moduleId> <openapi-file-or-url>
+  ms reviewed-summary <projectId> [keyword]
 
 资源:
   organization
@@ -210,6 +233,11 @@ ms — MeterSphere CLI
   functional-template
   api-module
   functional-case
+  functional-case-review
+  case-review
+  case-review-detail
+  case-review-module
+  case-review-user
   api
   api-case
 
@@ -233,6 +261,12 @@ ms — MeterSphere CLI
   ms functional-template list 100001100001
   ms api-module list 100001100001
   ms functional-case list "登录"
+  ms functional-case-review list '{"caseId":"922301316472832"}'
+  ms case-review list '{"projectId":"1163437937827840"}'
+  ms case-review get 922833892417536
+  ms case-review-detail list '{"projectId":"1163437937827840","reviewId":"922833892417536","viewStatusFlag":false}'
+  ms case-review-module list 1163437937827840
+  ms case-review-user list 1163437937827840
   ms functional-case get fc-123
   ms functional-case create '{"name":"登录用例"}'
   ms api list '{"keyword":"用户"}'
@@ -261,6 +295,14 @@ if [[ "$cmd" == "raw" ]]; then
   path="${1:-}"; shift || die "raw 需要 PATH"
   body="${1:-}"
   request "$method" "$path" "$body"
+  exit 0
+fi
+
+if [[ "$cmd" == "reviewed-summary" ]]; then
+  project_id="${1:-${METERSPHERE_PROJECT_ID:-}}"
+  keyword="${2:-}"
+  [[ -n "$project_id" ]] || die "reviewed-summary 需要 projectId"
+  python3 "$SCRIPT_DIR/ms_review_summary.py" "$project_id" "$keyword"
   exit 0
 fi
 
@@ -303,6 +345,14 @@ case "$action" in
       [[ -n "$project_id" ]] || die "api-module list 需要 projectId"
       body="{\"projectId\":\"$project_id\",\"protocols\":$(printf '%s' "$METERSPHERE_PROTOCOLS_JSON")}"
       request POST "$METERSPHERE_API_MODULE_TREE_PATH" "$body"
+    elif [[ "$resource" == "case-review-module" ]]; then
+      project_id="${arg:-$METERSPHERE_PROJECT_ID}"
+      [[ -n "$project_id" ]] || die "case-review-module list 需要 projectId"
+      request GET "$(path_fill "$METERSPHERE_CASE_REVIEW_MODULE_TREE_PATH" "$project_id")"
+    elif [[ "$resource" == "case-review-user" ]]; then
+      project_id="${arg:-$METERSPHERE_PROJECT_ID}"
+      [[ -n "$project_id" ]] || die "case-review-user list 需要 projectId"
+      request GET "$(path_fill "$METERSPHERE_CASE_REVIEW_USER_OPTION_PATH" "$project_id")"
     else
       if [[ -n "$arg" && "$arg" == \{* ]]; then
         body="$(normalize_json_with_defaults "$resource" "$arg")"
