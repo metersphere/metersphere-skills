@@ -1,17 +1,17 @@
-# MeterSphere Skill for OpenClaw
+# MeterSphere Skills for OpenClaw
 
 像与同事沟通一样，通过自然语言与你的 **MeterSphere 测试系统**交互。
 
-功能需求、功能用例、Swagger/OpenAPI、接口定义、接口测试用例 —— 都可以通过这套 Skill 配合 AI 助理完成。
+功能需求、功能用例、Swagger/OpenAPI、接口定义、接口测试用例 —— 都可以通过这套 Skills 配合 AI 助理完成。
 
-这个项目把 **MeterSphere REST API** 包装进 **OpenClaw Skill**：
+这个项目把 **MeterSphere REST API** 包装进 **OpenClaw Skills**：
 
 1. 你用自然语言描述需求，或提供需求文档 / Swagger 文档
 2. AI 识别意图并生成结构化草稿
 3. 本地脚本补齐稳定的请求结构
 4. 再批量写入 MeterSphere
 
-这套 Skill 当前推荐使用 **本地生成 + AI 增强 + 批量写入** 的混合模式：
+这套 Skills 当前推荐使用 **本地生成 + AI 增强 + 批量写入** 的混合模式：
 
 - 本地生成负责稳定、可落库
 - AI 增强负责补场景、润色、去重、优化断言
@@ -19,7 +19,7 @@
 
 ---
 
-# 为什么这个 Skill 有用
+# 为什么这个 Skills 有用
 
 | 系统视角 | 用户意图 | 输出 |
 |---|---|---|
@@ -37,7 +37,7 @@ metersphere-skills/
 ├── .env.example               # 环境变量示例
 ├── install.sh                 # 安装脚本
 └── skills/
-    ├── SKILL.md               # Skill 元数据与 Agent 指南（给 Agent 看）
+    ├── SKILL.md               # Skills 元数据与 Agent 指南（给 Agent 看）
     ├── references/
     │   ├── ms-api.md                  # MeterSphere API 参考
     │   ├── ai-functional-case-prompt.md
@@ -178,13 +178,3 @@ cd ~/.openclaw/workspace/skills/metersphere
 3. `api import-generate`
 4. 用 AI 按 `references/ai-api-bundle-prompt.md` 增强 JSON
 5. `api batch-create`
-
----
-
-# 当前实现特点
-
-- 默认支持组织、项目、模块、模板查询
-- 功能用例支持主流程 / 异常 / 边界三类草稿生成
-- 接口用例支持成功 / 必填缺失 / 边界三类草稿生成
-- OpenAPI example/schema 会优先用于填充值
-- 基础状态码断言会自动挂载
