@@ -114,8 +114,17 @@ references/ai-api-bundle-prompt.md
 对项目下每条功能用例调用：
 
 - `POST /functional/case/review/page`
+- `GET /functional/case/detail/{id}`
 
-若返回列表非空，则该用例**被评审过**；否则可视为**未被评审过**。
+其中：
+
+- `functional/case/review/page` 用于判断该用例是否参与过评审
+- `functional/case/detail/{id}` 返回详情字段，可直接读取：
+  - `bugCount`：该用例关联的缺陷数量
+  - `caseReviewCount`：该用例关联的评审数量
+  - `testPlanCount`：该用例关联的测试计划数量
+
+若 `functional/case/review/page` 返回列表非空，则该用例**被评审过**；否则可视为**未被评审过**。
 
 ### 口径 B：评审单维度
 
