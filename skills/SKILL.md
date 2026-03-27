@@ -1,6 +1,6 @@
 ---
 name: metersphere
-description: 通过 MeterSphere API 查询项目、模块、模板、功能用例、接口定义、接口用例、用例评审，并支持根据需求生成并写入功能用例、根据 Swagger/OpenAPI 生成并写入接口定义与接口用例。用户提到 MeterSphere、测试用例、功能用例、接口用例、Swagger/OpenAPI 导入、批量写入测试资产、用例评审、评审单、哪些用例被评审过、我的待评审、评审状态统计、某个功能用例详情、关联缺陷数量、评审记录时使用。
+description: 本项目将 MeterSphere REST API 与本地脚本能力整合，为 OpenClaw Agent 提供了一套高效、可复用的 Skills，支持自动生成功能用例、接口定义及接口用例，查询组织、项目、模块、用例评审与缺陷关联等信息，简化了测试资产管理流程，提升了团队的自动化效率。
 ---
 
 # MeterSphere Skills
