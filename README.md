@@ -138,17 +138,29 @@ metersphere-skills/
 
 ## 5. 安装方式
 
-### 5.1 手动安装
+### 5.1 快速开始
 
 ```bash
-mkdir -p ~/.openclaw/workspace/skills
-cp -R ./skills ~/.openclaw/workspace/skills/metersphere
+# 通过 Clawdhub 安装（推荐，自动处理依赖和更新）
+clawdhub install metersphere
+
 ```
 
-### 5.2 使用安装脚本
+### 5.2 手动安装
 
 ```bash
+
+mkdir -p ~/.openclaw/workspace/skills
+cp -R ./skills ~/.openclaw/workspace/skills/metersphere
+
+```
+
+### 5.3 使用安装脚本
+
+```bash
+
 ./install.sh
+
 ```
 
 ---
