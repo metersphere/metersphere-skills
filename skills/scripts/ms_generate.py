@@ -75,20 +75,70 @@ def build_functional_cases(project_id: str, module_id: str, template_id: str, te
         priority = infer_priority(item)
         tags = infer_tags(item)
         for idx, (name, desc, expected) in enumerate(build_case_variants(item), 1):
+            # 根据用例类型构建更合理的测试步骤
+            steps = build_test_steps(item, idx)
+            
             out.append({
                 'projectId': project_id,
                 'templateId': template_id,
+                'versionId': get_default_version_id(project_id),  # 添加versionId
                 'moduleId': module_id,
                 'name': name[:255],
-                'caseEditType': 'TEXT',
-                'textDescription': desc,
-                'expectedResult': expected,
-                'description': f'根据需求自动生成的功能用例，优先级={priority}，类型={idx}',
+                'caseEditType': 'STEP',  # 改为STEP模式
+                'steps': json.dumps(steps, ensure_ascii=False),  # STEP模式需要steps字段
+                'prerequisite': build_prerequisite(item),  # 根据需求生成前置条件
+                'remark': f'根据需求自动生成的功能用例，优先级={priority}，类型={idx}',
                 'aiCreate': True,
                 'customFields': [],
                 'tags': tags,
             })
     return out[:120]
+
+def build_test_steps(requirement: str, case_type: int) -> list:
+    """根据需求构建测试步骤"""
+    steps = []
+    
+    if case_type == 1:  # 主流程
+        steps = [
+            {"num": 0, "desc": "准备测试环境", "result": "环境准备就绪"},
+            {"num": 1, "desc": f"执行{requirement}操作", "result": "操作执行成功"},
+            {"num": 2, "desc": "验证操作结果", "result": "结果符合预期"}
+        ]
+    elif case_type == 2:  # 异常场景
+        steps = [
+            {"num": 0, "desc": "准备测试环境", "result": "环境准备就绪"},
+            {"num": 1, "desc": f"输入异常数据执行{requirement}", "result": "系统正确拦截异常输入"},
+            {"num": 2, "desc": "验证错误提示", "result": "错误提示清晰明确"}
+        ]
+    else:  # 边界场景
+        steps = [
+            {"num": 0, "desc": "准备测试环境", "result": "环境准备就绪"},
+            {"num": 1, "desc": f"输入边界值执行{requirement}", "result": "系统正确处理边界值"},
+            {"num": 2, "desc": "验证边界条件结果", "result": "边界条件下系统行为稳定"}
+        ]
+    
+    return steps
+
+def build_prerequisite(requirement: str) -> str:
+    """根据需求生成前置条件"""
+    if '登录' in requirement:
+        return "用户已注册账号且系统正常运行"
+    elif '支付' in requirement or '下单' in requirement:
+        return "用户已登录且账户余额充足"
+    elif '查询' in requirement or '搜索' in requirement:
+        return "系统中存在相关数据"
+    else:
+        return "系统正常运行"
+
+def get_default_version_id(project_id: str) -> str:
+    """获取项目的默认versionId"""
+    # 这里可以根据projectId返回对应的默认versionId
+    # 对于项目1163437937827840，返回1163437937827887
+    version_map = {
+        '1163437937827840': '1163437937827887',
+        # 可以添加其他项目的映射
+    }
+    return version_map.get(project_id, '')
 
 
 def parse_openapi_source(text: str):
