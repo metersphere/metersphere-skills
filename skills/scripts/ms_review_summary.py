@@ -106,19 +106,28 @@ def main():
         case_id = c.get('id')
         review_items = fetch_case_reviews(case_id)
         detail = fetch_case_detail(case_id)
+        
+        # 获取用例的评审状态
+        review_status = detail.get('reviewStatus')
+        
+        # 修复逻辑：只有评审状态为PASS或UN_PASS才算"已评审"
+        # 原逻辑：len(review_items) > 0  # 只要有关联评审记录
+        # 新逻辑：review_status in ['PASS', 'UN_PASS']  # 只有评审完成
+        is_reviewed = review_status in ['PASS', 'UN_PASS']
+        
         out.append({
             'caseId': case_id,
             'num': c.get('num'),
             'name': c.get('name'),
             'caseEditType': c.get('caseEditType'),
-            'reviewStatus': detail.get('reviewStatus'),
+            'reviewStatus': review_status,
             'lastExecuteResult': detail.get('lastExecuteResult'),
             'bugCount': detail.get('bugCount', 0),
             'caseReviewCount': detail.get('caseReviewCount', 0),
             'testPlanCount': detail.get('testPlanCount', 0),
             'demandCount': detail.get('demandCount', 0),
             'reviewCount': len(review_items),
-            'reviewed': len(review_items) > 0,
+            'reviewed': is_reviewed,  # 使用修复后的逻辑
             'reviews': [
                 {
                     'reviewId': r.get('reviewId'),
@@ -135,8 +144,8 @@ def main():
         'projectId': project_id,
         'keyword': keyword,
         'totalCases': len(out),
-        'reviewedCases': sum(1 for x in out if x['reviewed']),
-        'unreviewedCases': sum(1 for x in out if not x['reviewed']),
+        'reviewedCases': sum(1 for x in out if x['reviewed']),  # 已修复
+        'unreviewedCases': sum(1 for x in out if not x['reviewed']),  # 已修复
         'totalBugLinks': sum(int(x.get('bugCount') or 0) for x in out),
         'list': out,
     }, ensure_ascii=False, indent=2))
