@@ -109,9 +109,7 @@ def main():
         
         # 获取用例的评审状态
         review_status = detail.get('reviewStatus')
-        
-        # 修复逻辑：只有评审状态为PASS或UN_PASS才算"已评审"
-        # 原逻辑：len(review_items) > 0  # 只要有关联评审记录
+
         # 新逻辑：review_status in ['PASS', 'UN_PASS']  # 只有评审完成
         is_reviewed = review_status in ['PASS', 'UN_PASS']
         
@@ -144,8 +142,8 @@ def main():
         'projectId': project_id,
         'keyword': keyword,
         'totalCases': len(out),
-        'reviewedCases': sum(1 for x in out if x['reviewed']),  # 已修复
-        'unreviewedCases': sum(1 for x in out if not x['reviewed']),  # 已修复
+        'reviewedCases': sum(1 for x in out if x['reviewed']),
+        'unreviewedCases': sum(1 for x in out if not x['reviewed']),
         'totalBugLinks': sum(int(x.get('bugCount') or 0) for x in out),
         'list': out,
     }, ensure_ascii=False, indent=2))
