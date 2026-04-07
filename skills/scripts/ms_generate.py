@@ -148,6 +148,13 @@ def get_default_version_id(project_id: str) -> str:
     version_id = version_map.get(project_id, '')
     if not version_id:
         print(f"警告: 项目 {project_id} 没有默认的 versionId 映射。建议设置 METERSPHERE_DEFAULT_VERSION_ID 环境变量。")
+        print(f"警告: 如果未设置环境变量，将返回空字符串，可能导致创建失败。")
+        return ''
+    
+    # 如果使用硬编码值，发出警告
+    if project_id == '1163437937827840':
+        print(f"警告: 使用硬编码的 versionId (1163437937827887) 对应项目 1163437937827840。")
+        print(f"警告: 请确保这是正确的项目 ID，或设置 METERSPHERE_DEFAULT_VERSION_ID 环境变量。")
     
     return version_id
 

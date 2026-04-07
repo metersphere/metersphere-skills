@@ -222,11 +222,12 @@ def usage():
   ms api-module list 100001100001
   ms functional-case list 登录
   ms functional-case-review list '{"caseId":"922301316472832"}'
-  ms case-review list '{"projectId":"1163437937827840"}'
-  ms case-review get 922833892417536
-  ms case-review-detail list '{"projectId":"1163437937827840","reviewId":"922833892417536","viewStatusFlag":false}'
-  ms case-review-module list 1163437937827840
-  ms case-review-user list 1163437937827840
+  ms case-review list '{"projectId":"<your-project-id>"}'
+  ms case-review get <review-id>
+  ms case-review-detail list '{"projectId":"<your-project-id>","reviewId":"<review-id>","viewStatusFlag":false}'
+  ms case-review-module list <your-project-id>
+  ms case-review-user list <your-project-id>
+  # 注意: 请将 <your-project-id> 和 <review-id> 替换为实际的值，避免使用硬编码的示例值
 ''')
 
 

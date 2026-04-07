@@ -11,7 +11,7 @@ security:
   requiresSecrets: true
   sensitiveEnvironment: true
   externalNetworkAccess: true
-  notes: 此技能需要访问 MeterSphere CRM API，使用 ACCESS_KEY 和 SECRET_KEY 进行身份验证。请确保只向可信的 METERSPHERE_BASE_URL 发送请求。
+  notes: 此技能需要访问 MeterSphere API，使用 ACCESS_KEY 和 SECRET_KEY 进行身份验证。请确保只向可信的 METERSPHERE_BASE_URL 发送请求。
 
 ---
 
@@ -248,6 +248,8 @@ METERSPHERE_PROJECT_ID=        # 默认项目 ID
 METERSPHERE_ORGANIZATION_ID=100001  # 默认组织 ID
 METERSPHERE_HEADERS_JSON=      # 额外的 HTTP 头(JSON 格式,谨慎使用)
 METERSPHERE_PROTOCOLS_JSON='["HTTP"]'  # 支持的协议
+METERSPHERE_DEFAULT_TEMPLATE_ID= # 默认模板 ID (避免使用硬编码值)
+METERSPHERE_DEFAULT_VERSION_ID=  # 默认版本 ID (避免使用硬编码值)
 ```
 
 ### 依赖要求
@@ -292,13 +294,18 @@ METERSPHERE_PROTOCOLS_JSON='["HTTP"]'  # 支持的协议
 - 签名逻辑在本地使用 `SECRET_KEY`，不传输密钥
 
 ### 4. 硬编码 ID 警告
-- 脚本中包含硬编码的 `templateId` 和 `versionId` 值
-- 这些值对应特定项目（`1163437937827840`）
-- 如果未指定这些值，数据可能被错误归属
-- 建议在使用前检查并替换为正确的项目 ID
+- 脚本中包含硬编码的项目 ID（`1163437937827840`）、模板 ID（`1163437937827890`）和版本 ID（`1163437937827887`）
+- 这些值对应特定项目，如果未正确配置环境变量，数据可能被错误归属到错误的项目
+- 强烈建议设置以下环境变量来覆盖硬编码值：
+  - `METERSPHERE_DEFAULT_TEMPLATE_ID`
+  - `METERSPHERE_DEFAULT_VERSION_ID`
+- 在使用前检查并替换为正确的项目 ID
 
 ### 5. 首次使用建议
-1. 在非生产环境或沙箱中测试
-2. 使用最小权限的凭证
-3. 检查网络流量，确认只连接到预期的 `BASE_URL`
-4. 验证硬编码的 ID 值是否符合你的项目
+1. 复制 `.env.example` 为 `.env` 并填写实际值
+2. 在非生产环境或沙箱中测试
+3. 使用最小权限的凭证
+4. 检查网络流量，确认只连接到预期的 `BASE_URL`
+5. 验证硬编码的 ID 值是否符合你的项目
+6. 设置 `METERSPHERE_DEFAULT_TEMPLATE_ID` 和 `METERSPHERE_DEFAULT_VERSION_ID` 环境变量来覆盖硬编码值
+7. 注意脚本中的警告信息，确保数据被正确归属到目标项目

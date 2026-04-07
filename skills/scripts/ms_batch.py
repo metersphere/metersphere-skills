@@ -153,6 +153,7 @@ def create_functional_cases(payloads):
                 # 如果没有设置环境变量，使用硬编码值并发出警告
                 item['templateId'] = '1163437937827890'  # 项目1163437937827840的默认templateId
                 print("警告: 使用硬编码的 templateId (1163437937827890)。建议设置 METERSPHERE_DEFAULT_TEMPLATE_ID 环境变量。")
+                print("警告: 这可能导致数据被错误归属到项目 1163437937827840。请确保使用正确的项目 ID。")
         
         # 4. 确保有versionId（必需字段）
         if not item.get('versionId'):
@@ -165,6 +166,7 @@ def create_functional_cases(payloads):
                 # 如果没有设置环境变量，使用硬编码值并发出警告
                 item['versionId'] = '1163437937827887'  # 项目1163437937827840的默认versionId
                 print("警告: 使用硬编码的 versionId (1163437937827887)。建议设置 METERSPHERE_DEFAULT_VERSION_ID 环境变量。")
+                print("警告: 这可能导致数据被错误归属到项目 1163437937827840。请确保使用正确的项目 ID。")
         
         # 4. 使用curl发送multipart/form-data请求
         try:
