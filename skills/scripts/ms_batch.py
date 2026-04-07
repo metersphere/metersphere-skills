@@ -12,8 +12,8 @@ import mimetypes
 from urllib.parse import urlencode
 
 BASE_URL = os.environ.get('METERSPHERE_BASE_URL', '').rstrip('/')
-AK = os.environ.get('METERSPHERE_ACCESS_KEY') or os.environ.get('CORDYS_ACCESS_KEY', '')
-SK = os.environ.get('METERSPHERE_SECRET_KEY') or os.environ.get('CORDYS_SECRET_KEY', '')
+AK = os.environ.get('METERSPHERE_ACCESS_KEY') or os.environ.get('METERSPHERE_ACCESS_KEY', '')
+SK = os.environ.get('METERSPHERE_SECRET_KEY') or os.environ.get('METERSPHERE_SECRET_KEY', '')
 
 
 def die(msg):
@@ -142,13 +142,29 @@ def create_functional_cases(payloads):
             except:
                 item['customFields'] = []
         
-        # 3. 确保有正确的templateId（使用项目默认的templateId）
+        # 3. 确保有正确的templateId
         if not item.get('templateId'):
-            item['templateId'] = '1163437937827890'  # 项目1163437937827840的默认templateId
+            # 尝试从环境变量获取默认templateId
+            import os
+            template_id = os.environ.get('METERSPHERE_DEFAULT_TEMPLATE_ID')
+            if template_id:
+                item['templateId'] = template_id
+            else:
+                # 如果没有设置环境变量，使用硬编码值并发出警告
+                item['templateId'] = '1163437937827890'  # 项目1163437937827840的默认templateId
+                print("警告: 使用硬编码的 templateId (1163437937827890)。建议设置 METERSPHERE_DEFAULT_TEMPLATE_ID 环境变量。")
         
         # 4. 确保有versionId（必需字段）
         if not item.get('versionId'):
-            item['versionId'] = '1163437937827887'  # 项目1163437937827840的默认versionId
+            # 尝试从环境变量获取默认versionId
+            import os
+            version_id = os.environ.get('METERSPHERE_DEFAULT_VERSION_ID')
+            if version_id:
+                item['versionId'] = version_id
+            else:
+                # 如果没有设置环境变量，使用硬编码值并发出警告
+                item['versionId'] = '1163437937827887'  # 项目1163437937827840的默认versionId
+                print("警告: 使用硬编码的 versionId (1163437937827887)。建议设置 METERSPHERE_DEFAULT_VERSION_ID 环境变量。")
         
         # 4. 使用curl发送multipart/form-data请求
         try:

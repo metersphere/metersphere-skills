@@ -24,8 +24,8 @@ if ENV_FILE.exists():
     load_dotenv(ENV_FILE)
 
 BASE_URL = os.environ.get('METERSPHERE_BASE_URL', '').rstrip('/')
-ACCESS_KEY = os.environ.get('METERSPHERE_ACCESS_KEY') or os.environ.get('CORDYS_ACCESS_KEY', '')
-SECRET_KEY = os.environ.get('METERSPHERE_SECRET_KEY') or os.environ.get('CORDYS_SECRET_KEY', '')
+ACCESS_KEY = os.environ.get('METERSPHERE_ACCESS_KEY') or os.environ.get('METERSPHERE_ACCESS_KEY', '')
+SECRET_KEY = os.environ.get('METERSPHERE_SECRET_KEY') or os.environ.get('METERSPHERE_SECRET_KEY', '')
 PROJECT_ID = os.environ.get('METERSPHERE_PROJECT_ID', '')
 ORG_ID = os.environ.get('METERSPHERE_ORGANIZATION_ID', '100001')
 HEADERS_JSON = os.environ.get('METERSPHERE_HEADERS_JSON', '')

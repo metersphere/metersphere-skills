@@ -20,8 +20,8 @@ if ENV_FILE.exists():
             os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 BASE_URL = os.environ.get('METERSPHERE_BASE_URL', '').rstrip('/')
-ACCESS_KEY = os.environ.get('METERSPHERE_ACCESS_KEY') or os.environ.get('CORDYS_ACCESS_KEY', '')
-SECRET_KEY = os.environ.get('METERSPHERE_SECRET_KEY') or os.environ.get('CORDYS_SECRET_KEY', '')
+ACCESS_KEY = os.environ.get('METERSPHERE_ACCESS_KEY') or os.environ.get('METERSPHERE_ACCESS_KEY', '')
+SECRET_KEY = os.environ.get('METERSPHERE_SECRET_KEY') or os.environ.get('METERSPHERE_SECRET_KEY', '')
 
 
 def die(msg: str):

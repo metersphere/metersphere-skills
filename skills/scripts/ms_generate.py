@@ -132,13 +132,24 @@ def build_prerequisite(requirement: str) -> str:
 
 def get_default_version_id(project_id: str) -> str:
     """获取项目的默认versionId"""
-    # 这里可以根据projectId返回对应的默认versionId
-    # 对于项目1163437937827840，返回1163437937827887
+    import os
+    
+    # 首先尝试从环境变量获取
+    env_version_id = os.environ.get('METERSPHERE_DEFAULT_VERSION_ID')
+    if env_version_id:
+        return env_version_id
+    
+    # 如果没有环境变量，使用硬编码映射
     version_map = {
         '1163437937827840': '1163437937827887',
         # 可以添加其他项目的映射
     }
-    return version_map.get(project_id, '')
+    
+    version_id = version_map.get(project_id, '')
+    if not version_id:
+        print(f"警告: 项目 {project_id} 没有默认的 versionId 映射。建议设置 METERSPHERE_DEFAULT_VERSION_ID 环境变量。")
+    
+    return version_id
 
 
 def parse_openapi_source(text: str):
