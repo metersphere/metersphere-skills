@@ -2,7 +2,7 @@
   "name": "metersphere",
   "description": "通过 MeterSphere API 查询项目、模块、模板、功能用例、接口定义、接口用例，并支持根据需求生成并写入功能用例、根据 Swagger/OpenAPI 生成并写入接口定义与接口用例。",
   "version": "1.0.0",
-  "author": "OpenClaw Skills",
+  "author": "metersphere-skills 维护组",
   "requiredEnvVars": [
     "METERSPHERE_BASE_URL",
     "METERSPHERE_ACCESS_KEY",

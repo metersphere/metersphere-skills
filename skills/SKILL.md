@@ -1,6 +1,6 @@
 ---
 name: metersphere
-description: 本项目将 MeterSphere REST API 与本地脚本能力整合,为 OpenClaw Agent 提供了一套高效、可复用的 Skills,支持自动生成功能用例、接口定义及接口用例,查询组织、项目、模块、用例评审与缺陷关联等信息,简化了测试资产管理流程,提升了团队的自动化效率。
+description: MeterSphere REST API 的可复用 Skills 封装——支持测试资产查询、功能用例生成、接口定义导入与写入，适配多种 AI Agent 平台。
 environment:
   required:
     - METERSPHERE_BASE_URL
@@ -18,6 +18,10 @@ security:
 # MeterSphere Skills
 
 优先用本 skill 自带脚本,不要临时手写 curl。
+
+> **执行前提**:下文所有 `./scripts/ms.sh` 均为相对本技能目录的相对路径。执行前必须先进入技能安装目录(或改用绝对路径):
+> - npx skills 安装(OpenCode 等): `cd ~/.agents/skills/metersphere`
+> - OpenClaw 安装: `cd ~/.openclaw/skills/metersphere`
 
 ## 选择工作流
 

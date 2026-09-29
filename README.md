@@ -1,6 +1,6 @@
-# MeterSphere Skills for OpenClaw
+# MeterSphere Skills
 
-面向 **OpenClaw Agent** 的 MeterSphere 能力封装。
+面向多 Agent 平台（OpenCode、OpenClaw、Claude Code、Codex、Cursor 等）的 MeterSphere 能力封装。
 
 本项目将 **MeterSphere REST API** 与本地脚本能力整合为一套可复用的 Skills，使 Agent 能够以更稳定、更可控的方式完成以下工作：
 
@@ -102,10 +102,9 @@ MeterSphere 本身提供完整的测试资产管理能力，但在日常使用�
 ```text
 metersphere-skills/
 ├── README.md
-├── .env.example
-├── install.sh
 └── skills/
     ├── SKILL.md
+    ├── .env.example
     ├── references/
     │   ├── ms-api.md
     │   ├── ai-functional-case-prompt.md
@@ -136,41 +135,90 @@ metersphere-skills/
 
 ---
 
-## 5. 安装方式
+## 5. 安装方式（npx skills）
 
-### 5.1 快速开始
+本技能通过 [vercel-labs/skills](https://github.com/vercel-labs/skills) CLI 分发和安装到多种 AI Agent 工具。下文中 `<owner>` 指本仓库的 GitHub 拥有者（组织或个人）。
 
-```bash
-# 通过 Clawdhub 安装（推荐，自动处理依赖和更新）
-clawdhub install metersphere
-
-```
-
-### 5.2 手动安装
+### 5.1 预览可安装的技能
 
 ```bash
-
-mkdir -p ~/.openclaw/workspace/skills
-cp -R ./skills ~/.openclaw/workspace/skills/metersphere
-
+npx skills add <owner>/metersphere-skills --list
 ```
 
-### 5.3 使用安装脚本
+### 5.2 安装到 OpenCode（全局）
 
 ```bash
-
-./install.sh
-
+npx skills add <owner>/metersphere-skills -s metersphere -a opencode -g
 ```
+
+### 5.3 安装到所有已检测到的 Agent
+
+```bash
+npx skills add <owner>/metersphere-skills --all
+```
+
+### 5.4 不安装直接使用（试用）
+
+> **注意**：当前 `npx skills use` 仅支持 claude-code、codex、sarvam-code 等部分 Agent，暂不支持 opencode。
+
+```bash
+npx skills use <owner>/metersphere-skills --skill metersphere --agent opencode
+```
+
+### 5.5 卸载
+
+```bash
+npx skills remove metersphere --agent opencode -g
+```
+
+### 5.6 本地路径安装
+
+除 GitHub 仓库地址外，也可直接指定本地路径：
+
+```bash
+npx skills add /path/to/metersphere-skills -s metersphere -a opencode -g
+```
+
+### 5.7 关闭 CLI 遥测
+
+如需关闭 `npx skills` 的遥测上报，可在执行前设置环境变量：
+
+```bash
+DISABLE_TELEMETRY=1 npx skills add <owner>/metersphere-skills --all
+# 或
+DO_NOT_TRACK=1 npx skills add <owner>/metersphere-skills --all
+```
+
+### 5.8 更新已安装的技能
+
+`npx skills add` 会**完整递归复制**技能目录（含 `scripts/`、`references/` 及 `scripts/v2/` 子目录；仅排除 `.git`、`__pycache__`、`metadata.json`），无需手动复制文件。但安装是**副本而非实时链接**，仓库更新后需重新安装：
+
+```bash
+npx skills add <owner>/metersphere-skills --all
+```
+
+> **⚠️ 重装前备份 `.env`**：安装器会先清空规范副本目录再复制，技能根目录下的 `.env`（含真实密钥）会被删除。重装前备份、重装后恢复：
+>
+> ```bash
+> cp ~/.agents/skills/metersphere/.env /tmp/env.backup
+> npx skills add <owner>/metersphere-skills --all
+> cp /tmp/env.backup ~/.agents/skills/metersphere/.env
+> ```
 
 ---
 
 ## 6. 环境配置
 
-编辑：
+脚本按 `SKILL_DIR/.env` 解析环境变量，即编辑技能安装目录下的 `.env` 文件。不同安装方式对应的编辑位置：
+
+- **默认符号链接安装（OpenCode 等）**：编辑 `~/.agents/skills/metersphere/.env`（该目录是规范副本，各 Agent 通过符号链接共用）
+- **OpenClaw 经 npx 安装**：编辑 `~/.openclaw/skills/metersphere/.env`
+- **`--copy` 方式安装**：分别编辑每个 Agent 各自副本目录下的 `.env`
+
+模板随技能包附送：仓库内为 `skills/.env.example`，经 npx 安装后位于技能根目录，名为 `.env.example`。首次使用前复制为 `.env` 并填写：
 
 ```bash
-~/.openclaw/workspace/skills/metersphere/.env
+cp .env.example .env
 ```
 
 最小配置如下：
@@ -192,16 +240,20 @@ METERSPHERE_SECRET_KEY=your_secret_key
 ## 7. 安装后验证
 
 ```bash
-cd ~/.openclaw/workspace/skills/metersphere
+cd ~/.agents/skills/metersphere
 
 ./scripts/ms.sh --help
 ./scripts/ms.sh organization list
 ./scripts/ms.sh project list
 ```
 
+以 OpenCode 全局安装为例；OpenClaw 用户使用 `cd ~/.openclaw/skills/metersphere`。
+
 如果以上命令可以返回真实数据，说明基础鉴权与接口访问正常。
 
 ---
+
+以下所有命令均假设已进入技能目录。首次使用前请先复制模板并填写环境变量（见 §6）。
 
 ## 8. 常用命令
 
