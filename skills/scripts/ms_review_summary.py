@@ -23,6 +23,14 @@ BASE_URL = os.environ.get('METERSPHERE_BASE_URL', '').rstrip('/')
 ACCESS_KEY = os.environ.get('METERSPHERE_ACCESS_KEY') or os.environ.get('METERSPHERE_ACCESS_KEY', '')
 SECRET_KEY = os.environ.get('METERSPHERE_SECRET_KEY') or os.environ.get('METERSPHERE_SECRET_KEY', '')
 
+CASE_LIST_PATH = os.environ.get('METERSPHERE_FUNCTIONAL_CASE_LIST_PATH') or '/functional/case/page'
+CASE_REVIEW_PAGE_PATH = os.environ.get('METERSPHERE_FUNCTIONAL_CASE_REVIEW_LIST_PATH') or '/functional/case/review/page'
+CASE_DETAIL_PATH = os.environ.get('METERSPHERE_FUNCTIONAL_CASE_GET_PATH') or '/functional/case/detail/{id}'
+
+
+def fill_path(template: str, case_id: str = '') -> str:
+    return template.replace('{id}', case_id)
+
 
 def die(msg: str):
     print(msg, file=sys.stderr)
@@ -75,7 +83,7 @@ def fetch_all_functional_cases(project_id: str, keyword: str):
         body = {'projectId': project_id, 'current': current, 'pageSize': page_size}
         if keyword:
             body['keyword'] = keyword
-        data = post_json('/functional/case/page', body).get('data') or {}
+        data = post_json(CASE_LIST_PATH, body).get('data') or {}
         lst = data.get('list') or []
         rows.extend(lst)
         total = data.get('total') or len(rows)
@@ -86,12 +94,12 @@ def fetch_all_functional_cases(project_id: str, keyword: str):
 
 
 def fetch_case_reviews(case_id: str):
-    data = post_json('/functional/case/review/page', {'caseId': case_id, 'current': 1, 'pageSize': 100}).get('data') or {}
+    data = post_json(CASE_REVIEW_PAGE_PATH, {'caseId': case_id, 'current': 1, 'pageSize': 100}).get('data') or {}
     return data.get('list') or []
 
 
 def fetch_case_detail(case_id: str):
-    return (get_json(f'/functional/case/detail/{case_id}').get('data') or {})
+    return (get_json(fill_path(CASE_DETAIL_PATH, case_id)).get('data') or {})
 
 
 def main():

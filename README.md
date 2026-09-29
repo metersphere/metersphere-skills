@@ -101,24 +101,52 @@ MeterSphere 本身提供完整的测试资产管理能力，但在日常使用�
 
 ```text
 metersphere-skills/
-├── README.md
 ├── .env.example
+├── .gitignore
+├── AGENTS.md
+├── README.md
 ├── install.sh
-└── skills/
-    ├── SKILL.md
-    ├── references/
-    │   ├── ms-api.md
-    │   ├── ai-functional-case-prompt.md
-    │   └── ai-api-bundle-prompt.md
-    └── scripts/
-        ├── ms.sh
-        ├── ms.py
-        ├── ms_generate.py
-        ├── ms_batch.py
-        ├── ms_review_summary.py
-        ├── ms_case_report.py
-        └── ms_case_report_md.py
+├── skills/
+│   ├── .env.example
+│   ├── SKILL.md
+│   ├── skill-metadata.json
+│   ├── references/
+│   │   ├── ai-api-bundle-prompt.md
+│   │   ├── ai-functional-case-prompt.md
+│   │   ├── ai-module-api-case-prompt.md
+│   │   ├── ai-v2-api-case-prompt.md
+│   │   ├── ai-v2-functional-case-prompt.md
+│   │   └── ms-api.md
+│   └── scripts/
+│       ├── ms.py
+│       ├── ms.sh
+│       ├── ms_batch.py
+│       ├── ms_case_report.py
+│       ├── ms_case_report_md.py
+│       ├── ms_generate.py
+│       ├── ms_review_summary.py
+│       └── v2/
+│           ├── ms.sh
+│           ├── ms_case_report.py
+│           ├── ms_case_report_md.py
+│           ├── ms_chat_log.py
+│           ├── ms_generate.py
+│           ├── ms_generate_case.py
+│           ├── ms_import_helper.py
+│           └── ms_review_summary.py
+└── tests/
+    └── v2/
+        ├── conftest.py
+        ├── requirements-dev.txt
+        ├── test_ms_generate_case.py
+        ├── test_ms_import_helper.py
+        ├── test_reviewed_semantics.py
+        └── fixtures/
+            ├── definition_get.json
+            └── springdoc-sample-bookstore.json
 ```
+
+> **测试依赖说明**：`tests/v2/requirements-dev.txt` 仅是开发依赖（pytest），不是运行时依赖；测试套件不需要 MeterSphere 实例（全部本地回环或纯本地）。
 
 ### 目录说明
 
@@ -133,6 +161,7 @@ metersphere-skills/
 - `skills/scripts/ms_review_summary.py`：用例评审汇总脚本
 - `skills/scripts/ms_case_report.py`：单用例结构化报告
 - `skills/scripts/ms_case_report_md.py`：单用例 Markdown 报告
+- `skills/scripts/v2/`：MeterSphere v2 分支兼容脚本（ms.sh / ms_generate.py / ms_chat_log.py / ms_case_report.py / ms_review_summary.py / ms_case_report_md.py，或设 `METERSPHERE_VERSION=v2`）
 
 ---
 
@@ -202,6 +231,10 @@ cd ~/.openclaw/workspace/skills/metersphere
 如果以上命令可以返回真实数据，说明基础鉴权与接口访问正常。
 
 ---
+
+以下所有命令均假设已进入技能目录。首次使用前请先复制模板并填写环境变量（见 §6）。
+
+> **MeterSphere v2 用户**：使用 `./scripts/v2/ms.sh`（或设 `METERSPHERE_VERSION=v2` 强制指定）。v2 无组织概念，用工作空间（workspace）。
 
 ## 8. 常用命令
 
@@ -281,6 +314,89 @@ cd ~/.openclaw/workspace/skills/metersphere
 4. 步骤
 5. 缺陷
 6. 评审记录
+
+### 8.6 v2 AI 命令（comment / attachment / 生成写入）
+
+> 本节命令仅存在于 `./scripts/v2/ms.sh`（v2 分支）。v2 无组织概念，用工作空间（workspace）。
+
+#### 用例评论（comment）
+
+```bash
+./scripts/v2/ms.sh comment save <caseId> <description> [type] [belongId]
+./scripts/v2/ms.sh comment list <caseId> [type [belongId]]
+./scripts/v2/ms.sh comment delete <commentId>
+./scripts/v2/ms.sh comment edit <commentId> <caseId> <description> [type] [belongId]
+```
+
+- `comment save` 默认 `type=CASE`、`belongId=""`；也接受自定义类型（如 `AI_CHAT`）。
+- `comment list` 可按 `type` / `belongId` 过滤。
+- `comment delete` 为 GET 请求；`comment edit` 必须携带 `caseId`（服务端 CheckOwner 校验需要）。
+- 评论作者由服务端根据 AK 用户解析，客户端不传 author。
+
+#### 用例附件（attachment）
+
+```bash
+./scripts/v2/ms.sh attachment upload <caseId> <file>
+./scripts/v2/ms.sh attachment list <caseId>
+./scripts/v2/ms.sh attachment download <attachmentId> <isLocal> <outfile>
+./scripts/v2/ms.sh attachment delete <attachmentId>
+```
+
+- `attachment upload` 为 multipart 上传（`sourceId` 参数即 caseId）；`attachment delete` 为 GET 请求。
+- `attachment list` 返回附件元数据（id / name / size / isLocal / creator 等）。
+- `attachment download` 需指定 `isLocal`（普通上传的附件为 `true`）。
+
+#### 需求 → 功能用例（生成写入）
+
+```bash
+./scripts/v2/ms.sh functional-case generate <projectId> <moduleId> <templateId> <requirement-file>
+./scripts/v2/ms.sh functional-case batch-create <json-array-file>
+./scripts/v2/ms.sh functional-case generate-create <projectId> <moduleId> <templateId> <requirement-file>
+./scripts/v2/ms.sh functional-case delete <caseId>
+```
+
+- `generate` 本地生成 v2 草稿（`skills/scripts/v2/ms_generate.py`），不写入；`batch-create` 批量写入（JSON 数组文件）；`generate-create` 生成后直接批量写入，一步到位。
+- `delete` 删除指定功能用例（POST /test/case/delete/{id}，服务端需 PROJECT_TRACK_CASE_READ_DELETE 权限）；用于清理误写入的用例。
+- 草稿增强可参考 `references/ai-v2-functional-case-prompt.md`。
+
+#### API 定义 → 接口用例（case factory）
+
+```bash
+./scripts/v2/ms.sh api-case generate-create <projectId> [<definitionId>...]
+```
+
+- 为**已存在**的 API 定义批量生成带断言的接口用例（每端点 3 个变体：`*成功场景`（断言 200，P1）/ `*必填缺失`（首个必填 query/rest 参数置空，断言 400，P1，仅当存在必填参数）/ `*边界场景`（首个字符串参数 = 128 个 'x'，断言 200，P2，仅当存在字符串参数）），填补 v2 导入只建定义不建用例（`caseTotal='0'`）的缺口。
+- 不传 definitionId = 项目内全部 HTTP 定义（自动分页拉取）；变体生成由 `skills/scripts/v2/ms_generate_case.py` 完成（纯本地，无网络）。
+- **服务端实测要求**（缺一即创建失败）：每条用例必须显式携带 `id`（uuid4，服务端不自动生成）、显式 `priority`、`request` 为嵌套对象（JSON 字符串会被 400 拒绝）——脚本已自动处理。
+- **不创建定义**（定义由导入或插件负责）；不执行用例；不添加 JSONPath 断言（仅状态码断言）。
+- 覆盖说明：v2 将 query 参数存储在 `arguments` 字段（非 `query`），当前变体扫描 `query`/`rest`——参数存于 `arguments` 或仅 body 必填的定义只会生成 `*成功场景`（后续版本扩展）。
+- 失败不中断：单条创建失败继续其余，汇总报告；仅当 0 条创建成功时退出非零。
+
+#### AI 对话记录（chat-history flow）
+
+```bash
+./scripts/v2/ms_chat_log.py <conversation-json-file> [--creator <label>] [--title <title>] [--out <file>]
+./scripts/v2/ms.sh attachment upload <caseId> conversation-log.md
+```
+
+- 输入 JSON 结构：`{"title": "...", "exchanges": [{"user": "...", "assistant": "..."}]}`。
+- `ms_chat_log.py` 纯本地格式化（无网络），默认输出 `conversation-log.md`、默认 creator 为 `agent`。
+- 输出 Markdown 含标题 / 创建者 / 时间头 + 每轮 `[USER]` / `[ASSISTANT]` 段落，再通过 `attachment upload` 挂到目标用例，之后用 `attachment list` / `attachment download` 取回。
+
+#### 查看控制与写入安全
+
+- **查看控制（诚实说明）**：v2 的评论与附件**没有逐条 / 逐用户的访问控制**——访问仅受项目级权限约束（能否查看用例由用例所属项目的 ACL 决定，而非评论 / 附件本身）。任何能查看该用例的人都能看到其全部评论与附件；`type` / `belongId` 只是内容过滤条件，不是可见性控制。
+- **写入安全**：`functional-case batch-create` / `generate-create` / `delete` / `api-case generate-create` / 通用 `create` / `attachment upload` 要求显式设置 `METERSPHERE_PROJECT_ID`，未设置时拒绝执行并退出（exit 1），不会回退到硬编码项目 ID。
+
+#### 报告命令（reviewed-summary / case-report）
+
+```bash
+./scripts/v2/ms.sh reviewed-summary <projectId> [keyword]
+./scripts/v2/ms.sh case-report <projectId> <caseId>
+./scripts/v2/ms.sh case-report-md <projectId> <caseId>
+```
+
+- 与主包同名命令（§8.5）语义一致，但走 v2 路径；`case-report-md` 输出面向用户的 Markdown 报告（摘要/前置条件/备注/步骤/缺陷/评审记录）。
 
 ---
 
@@ -415,6 +531,10 @@ cd ~/.openclaw/workspace/skills/metersphere
 - 单用例详情 + 缺陷 + 评审记录聚合
 - 功能用例草稿生成与批量写入
 - OpenAPI 导入草稿生成与批量写入
+- 用例评论（comment）与附件（attachment）管理（v2）
+- AI 对话记录格式化并挂载为用例附件（v2）
+- 功能用例删除（v2，含写入安全守卫）
+- API 路径按版本/部署覆盖（`METERSPHERE_*_PATH`，ms.sh / ms.py / 报告脚本均支持）
 
 当前项目定位仍以：
 
@@ -426,7 +546,23 @@ cd ~/.openclaw/workspace/skills/metersphere
 
 ---
 
-## 13. 参考文件
+## 13. 已知问题与踩坑（现场实测证实）
+
+> 适用于 `api import-generate` / `api import-create`（v2）。详细说明见 `skills/references/ms-api.md` §10。
+
+```bash
+./scripts/v2/ms.sh api import-generate <projectId> ./openapi.json [moduleId]
+./scripts/v2/ms.sh api import-create <projectId> ./openapi.json [moduleId]
+```
+
+- **接口定义端点必须双份前缀** `{BASE}/api/api/definition/...`：单份 `{BASE}/api/definition/...` 得 Spring 404（无 `success` 键）——是路径错，不是数据不存在。
+- **重复导入报「缺少 definition request」**：fullCoverage 按 path 去重不落新行，但导入响应 `data.data[]` 返回解析阶段新生成的不可查询 id（GET 得 `data:null`）。v2 `import-create`/`import-generate` 已内置按 name 从定义列表解析持久化 id 的修复——重复运行同一 spec 会干净跳过（EXIT 0），不再失败。
+- **勿消费导入响应内联 request**：`apiDefinitionId` 必须来自持久化 id 的 detail，否则用例归属错误。
+- **spec 端点 name 变更再导入**：会更新既有定义 name（id 不变），旧变体名不匹配 → 生成新变体用例（重跑跳过，幂等成立）。
+
+---
+
+## 14. 参考文件
 
 如需查看更细的接口与提示词说明，请参考：
 
@@ -434,10 +570,13 @@ cd ~/.openclaw/workspace/skills/metersphere
 - `skills/references/ms-api.md`
 - `skills/references/ai-functional-case-prompt.md`
 - `skills/references/ai-api-bundle-prompt.md`
+- `skills/references/ai-v2-functional-case-prompt.md`
+- `skills/references/ai-v2-api-case-prompt.md`
+- `skills/references/ai-module-api-case-prompt.md`
 
 ---
 
-## 14. 总结
+## 15. 总结
 
 如果你希望 Agent 能够在 MeterSphere 中：
 

@@ -19,6 +19,11 @@ security:
 
 优先用本 skill 自带脚本,不要临时手写 curl。
 
+> **执行前提**:下文所有 `./scripts/ms.sh` 均为相对本技能目录的相对路径。执行前必须先进入技能安装目录(或改用绝对路径):
+> - OpenClaw 安装: `cd ~/.openclaw/workspace/skills/metersphere`
+>
+> **MeterSphere v2 用户**:使用 `./scripts/v2/ms.sh`(或设 `METERSPHERE_VERSION=v2` 强制指定)。v2 无组织概念,用工作空间(workspace)。
+
 ## 选择工作流
 
 按任务类型选最短路径:
@@ -301,7 +306,16 @@ METERSPHERE_DEFAULT_VERSION_ID=  # 默认版本 ID (避免使用硬编码值)
   - `METERSPHERE_DEFAULT_VERSION_ID`
 - 在使用前检查并替换为正确的项目 ID
 
-### 5. 首次使用建议
+### 5. 已知陷阱（接口定义导入，现场实测证实）
+
+- **双份前缀的来源**：接口定义端点走 `{BASE}/api/api/definition/...`——路径常量（`METERSPHERE_API_DEFINITION_*_PATH`）已含首段 `/api`，`service_prefix()` 再拼网关段，双份前缀是常量共同产生的结果；单份 `{BASE}/api/definition/...` 得 Spring 404（无 `success` 键）——是路径错，不是数据不存在。部署不同可用 `METERSPHERE_*_PATH` 覆盖。
+- **重复导入报「缺少 definition request」时**：fullCoverage 按 path 去重不落新行，但导入响应 `data.data[]` 返回解析阶段新生成的**不可查询 id**（GET 得 `data:null`）。不要直接消费响应 id——按 name 从 `/api/api/definition/list` 解析持久化 id 再做 detail GET（v2 `import-create`/`import-generate` 已内置此解析）。
+- **勿消费导入响应内联 request**：`apiDefinitionId` 必须来自持久化 id 的 detail，否则用例归属错误。
+- **同名定义多个**：按 name 解析取首个并输出中文警告；spec 端点 name 变更再导入会更新既有定义 name（id 不变），旧变体名不匹配 → 生成新变体（幂等：重跑跳过）。
+- **`raw` 是未加防护的逃生口**：`raw GET|POST <path>` 绕过所有写入类守卫（`require_project_id` 等），直接对任意路径发请求——仅用于调试，不要在自动化流程里使用。
+- **`resolve_spec_to_file` 会发起任意外联**：对用户提供的 http/https/file:// URL 直接 GET，且写入的临时文件不会被清理——仅对可信来源使用。
+
+### 6. 首次使用建议
 1. 复制 `.env.example` 为 `.env` 并填写实际值
 2. 在非生产环境或沙箱中测试
 3. 使用最小权限的凭证
@@ -309,3 +323,87 @@ METERSPHERE_DEFAULT_VERSION_ID=  # 默认版本 ID (避免使用硬编码值)
 5. 验证硬编码的 ID 值是否符合你的项目
 6. 设置 `METERSPHERE_DEFAULT_TEMPLATE_ID` 和 `METERSPHERE_DEFAULT_VERSION_ID` 环境变量来覆盖硬编码值
 7. 注意脚本中的警告信息，确保数据被正确归属到目标项目
+
+## v2 AI 工作流（comment / attachment / 生成写入）
+
+> 本节命令仅存在于 `./scripts/v2/ms.sh`（v2 分支）。v2 无组织概念，用工作空间（workspace）。
+
+### 1. 用例评论（comment）
+
+在功能用例上保存 / 查询 / 删除 / 编辑评论（如 AI 生成的说明、评审意见等）：
+
+```bash
+./scripts/v2/ms.sh comment save <caseId> <description> [type] [belongId]
+./scripts/v2/ms.sh comment list <caseId> [type [belongId]]
+./scripts/v2/ms.sh comment delete <commentId>
+./scripts/v2/ms.sh comment edit <commentId> <caseId> <description> [type] [belongId]
+```
+
+- `comment save` 默认 `type=CASE`、`belongId=""`；也接受自定义类型（如 `AI_CHAT`）。
+- `comment list` 可按 `type` / `belongId` 过滤。
+- `comment delete` 为 GET 请求（v2 接口如此定义）。
+- `comment edit` 必须携带 `caseId`（服务端 CheckOwner 校验需要）。
+- 评论作者由服务端根据 AK 用户解析，客户端不传 author。
+
+### 2. 用例附件（attachment）
+
+在功能用例上上传 / 查询 / 下载 / 删除附件（如 AI 对话记录、需求文档等）：
+
+```bash
+./scripts/v2/ms.sh attachment upload <caseId> <file>
+./scripts/v2/ms.sh attachment list <caseId>
+./scripts/v2/ms.sh attachment download <attachmentId> <isLocal> <outfile>
+./scripts/v2/ms.sh attachment delete <attachmentId>
+```
+
+- `attachment upload` 为 multipart 上传（`sourceId` 参数即 caseId）。
+- `attachment list` 返回附件元数据（id / name / size / isLocal / creator 等）。
+- `attachment download` 需指定 `isLocal`（普通上传的附件为 `true`）。
+- `attachment delete` 为 GET 请求（v2 接口如此定义）。
+
+### 3. 需求 → 功能用例（生成写入）
+
+```bash
+./scripts/v2/ms.sh functional-case generate <projectId> <moduleId> <templateId> <requirement-file>
+./scripts/v2/ms.sh functional-case batch-create <json-array-file>
+./scripts/v2/ms.sh functional-case generate-create <projectId> <moduleId> <templateId> <requirement-file>
+./scripts/v2/ms.sh functional-case delete <caseId>
+```
+
+- `generate`：本地生成 v2 草稿 JSON（`skills/scripts/v2/ms_generate.py`），不写入。
+- `batch-create`：批量写入（JSON 数组文件，逐条 POST /track/test/case/add）。
+- `generate-create`：生成后直接批量写入，一步到位。
+- `delete`：删除指定功能用例（POST /test/case/delete/{id}，服务端需 PROJECT_TRACK_CASE_READ_DELETE 权限）；用于清理误写入的用例。
+- 草稿增强可参考 `references/ai-v2-functional-case-prompt.md`。
+
+### 4. AI 对话记录（chat-history flow）
+
+把一次 AI 交互的完整对话保存为 Markdown 附件挂到用例上：
+
+```bash
+python3 skills/scripts/v2/ms_chat_log.py <conversation-json-file> [--creator <label>] [--title <title>] [--out <file>]
+./scripts/v2/ms.sh attachment upload <caseId> conversation-log.md
+```
+
+- 输入 JSON 结构：`{"title": "...", "exchanges": [{"user": "...", "assistant": "..."}]}`。
+- `ms_chat_log.py` 纯本地格式化（无网络），默认输出 `conversation-log.md`、默认 creator 为 `agent`。
+- 输出 Markdown 含标题 / 创建者 / 时间头 + 每轮 `[USER]` / `[ASSISTANT]` 段落。
+- 再通过 `attachment upload` 挂到目标用例，之后用 `attachment list` / `attachment download` 取回。
+
+### 5. 查看控制（诚实说明）
+
+v2 的评论与附件**没有逐条 / 逐用户的访问控制**——访问仅受项目级权限约束（能否查看用例由用例所属项目的 ACL 决定，而非评论 / 附件本身）。任何能查看该用例的人都能看到其全部评论与附件。`type` / `belongId` 只是内容过滤条件，不是可见性控制。如需隔离，只能通过独立的用例 / 模块实现粗粒度隔离，无法做到真正的逐条 ACL。
+
+### 6. 写入安全
+
+`functional-case batch-create` / `generate-create` / `delete` / 通用 `create` / `attachment upload` 等写入操作要求显式设置 `METERSPHERE_PROJECT_ID` 环境变量；未设置时脚本拒绝执行并退出（exit 1），不会回退到硬编码项目 ID。
+
+### 7. 报告命令（reviewed-summary / case-report）
+
+```bash
+./scripts/v2/ms.sh reviewed-summary <projectId> [keyword]
+./scripts/v2/ms.sh case-report <projectId> <caseId>
+./scripts/v2/ms.sh case-report-md <projectId> <caseId>
+```
+
+- 与主包同名命令语义一致，但走 v2 路径；`case-report-md` 输出面向用户的 Markdown 报告（摘要/前置条件/备注/步骤/缺陷/评审记录）。

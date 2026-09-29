@@ -142,3 +142,26 @@ references/ai-api-bundle-prompt.md
 
 - 更细粒度 JSONPath 断言仍建议由 AI 增强阶段补充
 - 当前本地生成仍以稳定、可落库为优先
+
+## 10. 接口定义导入（fullCoverage）幂等语义与陷阱
+
+> 以下均为现场实测证实的事实（v2.10.26-lts），适用于 `api import-generate` / `api import-create`。
+
+### 双份前缀的来源与覆盖方式
+
+- 接口定义端点实际走 `{BASE}/api/api/definition/...`：路径常量 `METERSPHERE_API_DEFINITION_LIST_PATH` / `_GET_PATH` / `_CREATE_PATH` / `_IMPORT_PATH`（`ms.sh` 内默认值）已包含首段 `/api`，`service_prefix()` 再拼上网关段 `/api`——双份前缀是这两个常量共同产生的结果，不是需要手工拼接的额外规则。
+- **单份前缀** `{BASE}/api/definition/get/{id}` 会得到 Spring 404（`{"status":404,"error":"Not Found"}`，无 `success` 键）——不是数据不存在，是路径打错。
+- 部署形态不同的环境可用现有 `METERSPHERE_*_PATH` 环境变量覆盖路径常量（`ms.sh` 的 `request()` 第 4 参默认 `api`，传空串 `""` 仍回退为 `api`）。
+
+### fullCoverage 重复导入的幂等语义
+
+- fullCoverage 模式**按 path 去重**：重复导入同一 spec 不会落新定义行，但导入响应 `data.data[]` 返回的是**解析阶段新生成的不可查询 id**（GET 该 id 得 `{"success":true,"data":null}`），不是持久化 id。
+- 因此**不能直接消费导入响应里的 id** 去 detail GET / 关联用例——首次导入成功仅因响应 id 恰为持久化 id，重复导入必失败。
+- **正确做法（v2 已内置）**：按 name 从 `POST /api/api/definition/list/{goPage}/{pageSize}`（body `{"projectId":...,"protocols":[...]}`）解析持久化 id，再用持久化 id 做 detail GET 与已存在用例预检。同名定义多个时取首个并输出中文警告。
+- **勿消费导入响应内联 request**：`apiDefinitionId` 必须来自持久化 id 的 detail，否则用例归属错误。
+
+### name 漂移语义
+
+- spec 中端点 name 变更（path 不变）再导入：fullCoverage 按 path 去重不落新行，但会**更新既有定义的 name**（id/createTime 不变）。
+- 此时按 name 解析仍能命中（改名后的定义在列表中），旧用例变体名不匹配新变体名 → 生成新变体用例（EXIT 0）→ 重跑跳过，幂等成立。
+- 若 name 在定义列表中完全不存在（如跨项目、列表拉取失败），回退响应 id → detail GET 得 `data:null` → 输出中文诊断并跳过该定义。

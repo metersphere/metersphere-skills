@@ -23,6 +23,15 @@ BASE_URL = os.environ.get('METERSPHERE_BASE_URL', '').rstrip('/')
 ACCESS_KEY = os.environ.get('METERSPHERE_ACCESS_KEY') or os.environ.get('METERSPHERE_ACCESS_KEY', '')
 SECRET_KEY = os.environ.get('METERSPHERE_SECRET_KEY') or os.environ.get('METERSPHERE_SECRET_KEY', '')
 
+CASE_DETAIL_PATH = os.environ.get('METERSPHERE_FUNCTIONAL_CASE_GET_PATH') or '/functional/case/detail/{id}'
+CASE_REVIEW_PAGE_PATH = os.environ.get('METERSPHERE_FUNCTIONAL_CASE_REVIEW_LIST_PATH') or '/functional/case/review/page'
+CASE_BUG_ASSOCIATE_PAGE_PATH = os.environ.get('METERSPHERE_CASE_BUG_ASSOCIATE_PAGE_PATH') or '/functional/case/test/associate/bug/page'
+CASE_BUG_HAS_ASSOCIATE_PAGE_PATH = os.environ.get('METERSPHERE_CASE_BUG_HAS_ASSOCIATE_PAGE_PATH') or '/functional/case/test/has/associate/bug/page'
+
+
+def fill_path(template: str, case_id: str = '') -> str:
+    return template.replace('{id}', case_id)
+
 
 def die(msg: str):
     print(msg, file=sys.stderr)
@@ -68,11 +77,11 @@ def get_json(path: str):
 
 
 def case_detail(case_id: str):
-    return (get_json(f'/functional/case/detail/{case_id}').get('data') or {})
+    return (get_json(fill_path(CASE_DETAIL_PATH, case_id)).get('data') or {})
 
 
 def case_reviews(case_id: str):
-    data = post_json('/functional/case/review/page', {'caseId': case_id, 'current': 1, 'pageSize': 100}).get('data') or {}
+    data = post_json(CASE_REVIEW_PAGE_PATH, {'caseId': case_id, 'current': 1, 'pageSize': 100}).get('data') or {}
     return data.get('list') or []
 
 
@@ -83,7 +92,7 @@ def _bug_key(bug: dict):
 def case_bugs(project_id: str, case_id: str):
     lists = []
 
-    data1 = post_json('/functional/case/test/associate/bug/page', {
+    data1 = post_json(CASE_BUG_ASSOCIATE_PAGE_PATH, {
         'projectId': project_id,
         'sourceId': case_id,
         'current': 1,
@@ -91,7 +100,7 @@ def case_bugs(project_id: str, case_id: str):
     }).get('data') or {}
     lists.extend(data1.get('list') or [])
 
-    data2 = post_json('/functional/case/test/has/associate/bug/page', {
+    data2 = post_json(CASE_BUG_HAS_ASSOCIATE_PAGE_PATH, {
         'projectId': project_id,
         'caseId': case_id,
         'testPlanCaseId': '',

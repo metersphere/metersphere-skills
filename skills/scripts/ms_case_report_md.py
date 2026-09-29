@@ -13,12 +13,15 @@ def die(msg: str):
 
 
 def run_json(project_id: str, case_id: str):
-    proc = subprocess.run(
-        ['python3', str(SCRIPT_DIR / 'ms_case_report.py'), project_id, case_id],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+    try:
+        proc = subprocess.run(
+            ['python3', str(SCRIPT_DIR / 'ms_case_report.py'), project_id, case_id],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        die((e.stderr or '').strip() or f'case-report 子进程失败 (exit {e.returncode})')
     return json.loads(proc.stdout)
 
 

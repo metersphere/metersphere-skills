@@ -1,0 +1,57 @@
+{
+  "openapi": "3.0.1",
+  "info": { "title": "Bookstore API", "description": "Demo mimicking real springdoc-openapi output with full schemas", "version": "1.2.3" },
+  "servers": [ { "url": "http://localhost:8080" } ],
+  "paths": {
+    "/api/books": {
+      "get": {
+        "tags": ["book-controller"], "summary": "Search books", "operationId": "searchBooks",
+        "parameters": [
+          { "name": "title", "in": "query", "required": false, "schema": { "type": "string", "example": "Dune" } },
+          { "name": "page", "in": "query", "required": true, "schema": { "type": "integer", "format": "int32", "default": 1, "example": 1 } },
+          { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["AVAILABLE", "SOLD_OUT"] } }
+        ],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BookPage" } } } } }
+      },
+      "post": {
+        "tags": ["book-controller"], "summary": "Create book", "operationId": "createBook",
+        "requestBody": { "required": true, "content": { "application/json": {
+          "schema": { "$ref": "#/components/schemas/BookCreate" },
+          "example": { "title": "Dune", "author": "Frank Herbert", "price": 12.99, "genre": "SCI_FI" } } } },
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Book" } } } } }
+      }
+    },
+    "/api/books/{id}": {
+      "get": {
+        "tags": ["book-controller"], "summary": "Get book by id", "operationId": "getBook",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64", "example": 42 } } ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Book" } } } },
+          "404": { "description": "Not Found" }
+        }
+      }
+    }
+  },
+  "components": { "schemas": {
+    "Book": { "type": "object", "properties": {
+        "id": { "type": "integer", "format": "int64", "example": 42 },
+        "title": { "type": "string", "example": "Dune" },
+        "author": { "type": "string" },
+        "price": { "type": "number", "format": "double", "example": 12.99 },
+        "genre": { "type": "string", "enum": ["SCI_FI", "FANTASY", "HISTORY"] },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "publishedAt": { "type": "string", "format": "date-time" } },
+      "required": ["id", "title", "author"] },
+    "BookCreate": { "type": "object", "properties": {
+        "title": { "type": "string", "example": "Dune" },
+        "author": { "type": "string", "example": "Frank Herbert" },
+        "price": { "type": "number", "format": "double" },
+        "genre": { "type": "string", "enum": ["SCI_FI", "FANTASY", "HISTORY"] } },
+      "required": ["title", "author"] },
+    "BookPage": { "type": "object", "properties": {
+        "items": { "type": "array", "items": { "$ref": "#/components/schemas/Book" } },
+        "total": { "type": "integer", "format": "int64" },
+        "page": { "type": "integer", "format": "int32" },
+        "size": { "type": "integer", "format": "int32" } } }
+  } }
+}
