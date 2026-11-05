@@ -1,7 +1,7 @@
 {
   "name": "metersphere",
-  "description": "通过 MeterSphere API 查询项目、模块、模板、功能用例、接口定义、接口用例，并支持根据需求生成并写入功能用例、根据 Swagger/OpenAPI 生成并写入接口定义与接口用例。",
-  "version": "1.0.0",
+  "description": "通过 MeterSphere API 查询项目、模块、模板、功能用例、接口定义、接口用例；支持根据需求生成并写入功能用例、根据 Swagger/OpenAPI 生成并写入接口定义与接口用例，以及将 AI 优化后的缺陷草稿连同附件提交到 MeterSphere 并按模板成员字段指派处理人。",
+  "version": "1.1.0",
   "author": "OpenClaw Skills",
   "requiredEnvVars": [
     "METERSPHERE_BASE_URL",
@@ -19,14 +19,24 @@
     "METERSPHERE_HEADERS_JSON",
     "METERSPHERE_PROTOCOLS_JSON",
     "METERSPHERE_DEFAULT_TEMPLATE_ID",
-    "METERSPHERE_DEFAULT_VERSION_ID"
+    "METERSPHERE_DEFAULT_VERSION_ID",
+    "METERSPHERE_BUG_TEMPLATE_ID",
+    "METERSPHERE_BUG_ADD_PATH",
+    "METERSPHERE_BUG_DETAIL_PATH",
+    "METERSPHERE_BUG_ATTACHMENT_LIST_PATH",
+    "METERSPHERE_BUG_TEMPLATE_OPTION_PATH",
+    "METERSPHERE_BUG_TEMPLATE_DETAIL_PATH",
+    "METERSPHERE_ALLOW_INSECURE_HTTP"
   ],
   "securityNotes": [
     "仅提供具有最小必要权限的 MeterSphere 测试账户凭证",
     "建议使用只读 API 密钥进行查询操作",
     "为创建操作使用单独的、有限权限的密钥",
     "METERSPHERE_HEADERS_JSON 可注入任意 HTTP 头，请谨慎使用",
-    "脚本中包含硬编码的 templateId 和 versionId 值，建议在使用前检查并替换"
+    "Bug 提交需要用户在检查预览后显式执行 --confirm，操作会创建外部记录并上传附件",
+    "只上传用户明确提供且已检查不包含凭证、Cookie、令牌或个人敏感信息的附件",
+    "默认拒绝通过 HTTP 传输 API 签名、缺陷内容或附件；仅可信内网实例可显式设置 METERSPHERE_ALLOW_INSECURE_HTTP=true",
+    "脚本使用目标项目的默认缺陷模板校验必填字段，无法推导的字段必须显式提供"
   ],
-  "usage": "用户提到 MeterSphere、测试用例、功能用例、接口用例、Swagger/OpenAPI 导入、批量写入测试资产、用例评审、评审单、哪些用例被评审过、我的待评审、评审状态统计、某个功能用例详情、关联缺陷数量、评审记录时使用。"
+  "usage": "用户提到 MeterSphere、测试用例、功能用例、接口用例、Swagger/OpenAPI 导入、批量写入测试资产、用例评审、评审单、哪些用例被评审过、我的待评审、评审状态统计、某个功能用例详情、关联缺陷数量、评审记录、提交 Bug、提交缺陷、优化缺陷标题、生成复现步骤、上传缺陷截图、指派缺陷处理人时使用。"
 }

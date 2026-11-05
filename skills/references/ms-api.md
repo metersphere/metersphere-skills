@@ -142,3 +142,81 @@ references/ai-api-bundle-prompt.md
 
 - 更细粒度 JSONPath 断言仍建议由 AI 增强阶段补充
 - 当前本地生成仍以稳定、可落库为优先
+
+## 10. 缺陷提交 API（MeterSphere v3.x 已核对）
+
+本节以 MeterSphere v3.x 源码为准。路由定义见 [前端请求常量](https://github.com/metersphere/metersphere/blob/v3.x/frontend/src/api/requrls/bug-management.ts)，控制器和字段校验见 [BugController](https://github.com/metersphere/metersphere/blob/v3.x/backend/services/bug-management/src/main/java/io/metersphere/bug/controller/BugController.java) 与 [BugEditRequest](https://github.com/metersphere/metersphere/blob/v3.x/backend/services/bug-management/src/main/java/io/metersphere/bug/dto/request/BugEditRequest.java)。内容根据源码整理和改写。
+
+### 获取模板和可指派人员
+
+```http
+GET /bug/template/option/{projectId}
+POST /bug/template/detail
+Content-Type: application/json
+
+{"projectId":"<projectId>","id":"<templateId>"}
+```
+
+`/bug/template/option` 返回项目可用模板，脚本选择 `enableDefault: true` 的项；如果没有默认项，调用者必须提供模板 ID。`/bug/template/detail` 返回 `customFields`。其中 `type` 为 `MEMBER` 或 `MULTIPLE_MEMBER` 的字段包含可用成员 `options`，应使用其稳定 `value` 作为处理人值，而不是按姓名猜测。
+
+### 创建缺陷并上传附件
+
+```http
+POST /bug/add
+Content-Type: multipart/form-data
+
+request: application/json
+files: <file>     # 可重复，附件字段名必须为 files
+```
+
+`request` 至少包含：
+
+```json
+{
+  "projectId": "<projectId>",
+  "templateId": "<templateId>",
+  "title": "优化后的缺陷标题",
+  "description": "<h3>前置条件</h3><p>...</p>",
+  "tags": ["可选标签"],
+  "customFields": [
+    {
+      "id": "<fieldId>",
+      "name": "<fieldName>",
+      "type": "MEMBER",
+      "value": "<处理人 userId>",
+      "text": "<处理人显示名>"
+    }
+  ]
+}
+```
+
+`projectId` 和 `templateId` 是创建必填字段。项目模板声明为必填的自定义字段也必须传递。前端创建流程将 `request` 作为 JSON Blob，同时用重复的 `files` 表单字段传递本地附件，参见 [前端 uploadFile 实现](https://github.com/metersphere/metersphere/blob/v3.x/frontend/src/api/http/Axios.ts)。返回对象中包含新缺陷 `id`。每张图片的优化说明不是独立附件字段，应写入 `description` 的“附图”段落，并与 `files` 的顺序一一对应。
+
+### 回读验证
+
+```http
+GET /bug/get/{id}
+GET /bug/attachment/list/{id}
+```
+
+创建后应回读详情的 `title`，以及附件列表数量。若标题或附件数不符合提交内容，调用方必须报告部分失败，不能宣称提交成功。
+
+### 指派边界
+
+MeterSphere v3.x 的缺陷创建接口没有独立的“assign”端点；处理人由缺陷模板的成员类型自定义字段写入。不同项目的字段 ID、字段名称、必填规则和候选成员都可能不同，因此 Skill 先读取模板再匹配输入。若模板不存在成员字段，Skill 不会伪造处理人字段或调用未确认的接口。
+
+### CLI 工作流
+
+```bash
+./scripts/ms.sh bug members <projectId>
+# 用 references/ai-bug-prompt.md 将原始描述整理为 raw-bug.json
+./scripts/ms.sh bug prepare <projectId> ./raw-bug.json > ./prepared-bug.json
+# 审核预览并获取明确确认后：
+./scripts/ms.sh bug submit ./prepared-bug.json --confirm
+```
+
+创建接口需具备 `PROJECT_BUG_ADD` 权限；模板读取和回读接口需具备 `PROJECT_BUG_READ` 权限。附件由创建请求一次上传，不需要预先调用 `/bug/attachment/upload`。
+
+### 传输安全与预览完整性
+
+Skill 默认拒绝 `http://` 的 `METERSPHERE_BASE_URL`。可信内网实例如必须使用 HTTP，必须显式设置 `METERSPHERE_ALLOW_INSECURE_HTTP=true`；这会以明文传输动态签名、缺陷内容和附件。`prepare` 会为请求 JSON 与每个附件计算 SHA-256 完整性摘要；`submit` 在发起写操作前会重新计算，预览文件或附件变化时拒绝提交，要求重新生成并审核。

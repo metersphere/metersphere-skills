@@ -227,6 +227,10 @@ ms — MeterSphere CLI
   ms reviewed-summary <projectId> [keyword]
   ms case-report <projectId> <caseId>
   ms case-report-md <projectId> <caseId>
+  ms bug template <projectId> [--template <templateId>]
+  ms bug members <projectId> [--template <templateId>]
+  ms bug prepare <projectId> <raw-bug.json> [--template <templateId>]
+  ms bug submit <prepared-bug.json> --confirm
 
 资源:
   organization
@@ -280,6 +284,11 @@ ms — MeterSphere CLI
   ms api import-generate 100001100001 root ./openapi.json
   ms api batch-create ./api-bundle.json
   ms api import-create 100001100001 root ./openapi.json
+  ms bug template <projectId>
+  ms bug members <projectId>
+  ms bug prepare <projectId> ./raw-bug.json > ./prepared-bug.json
+  # 检查 prepared-bug.json 后，才允许真正写入 MeterSphere:
+  ms bug submit ./prepared-bug.json --confirm
   ms raw GET /api/project/list
 EOF
 }
@@ -298,6 +307,11 @@ if [[ "$cmd" == "raw" ]]; then
   path="${1:-}"; shift || die "raw 需要 PATH"
   body="${1:-}"
   request "$method" "$path" "$body"
+  exit 0
+fi
+
+if [[ "$cmd" == "bug" ]]; then
+  python3 "$SCRIPT_DIR/ms_bug.py" "$@"
   exit 0
 fi
 
