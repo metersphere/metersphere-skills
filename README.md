@@ -8,6 +8,7 @@
 - 根据需求生成并写入 **功能用例**
 - 根据 Swagger / OpenAPI 生成并写入 **接口定义 + 接口用例**
 - 查询 **用例评审**、评审详情、评审状态、评审人
+- 将 AI 优化后的原始问题提交为 **缺陷**，上传截图并按缺陷模板成员字段指派处理人
 - 回答“哪些功能用例被评审过”“某条用例关联了多少个缺陷”
 - 输出单条功能用例的 **详情 + 缺陷 + 评审记录**
 
@@ -105,11 +106,13 @@ metersphere-skills/
 ├── .env.example
 ├── install.sh
 └── skills/
+    ├── .env.example
     ├── SKILL.md
     ├── references/
     │   ├── ms-api.md
     │   ├── ai-functional-case-prompt.md
-    │   └── ai-api-bundle-prompt.md
+    │   ├── ai-api-bundle-prompt.md
+    │   └── ai-bug-prompt.md
     └── scripts/
         ├── ms.sh
         ├── ms.py
@@ -117,11 +120,13 @@ metersphere-skills/
         ├── ms_batch.py
         ├── ms_review_summary.py
         ├── ms_case_report.py
-        └── ms_case_report_md.py
+        ├── ms_case_report_md.py
+        └── ms_bug.py
 ```
 
 ### 目录说明
 
+- `skills/.env.example`：可随 Skill 安装的环境变量模板
 - `skills/SKILL.md`：Skill 元信息与 Agent 执行指南
 - `skills/references/ms-api.md`：MeterSphere API 参考与能力边界说明
 - `skills/references/ai-functional-case-prompt.md`：功能用例增强提示词
@@ -132,7 +137,8 @@ metersphere-skills/
 - `skills/scripts/ms_batch.py`：批量写入 MeterSphere
 - `skills/scripts/ms_review_summary.py`：用例评审汇总脚本
 - `skills/scripts/ms_case_report.py`：单用例结构化报告
-- `skills/scripts/ms_case_report_md.py`：单用例 Markdown 报告
+- `skills/references/ai-bug-prompt.md`：缺陷提交前的 AI 优化 JSON 契约
+- `skills/scripts/ms_bug.py`：缺陷模板校验、附件提交及回读验证
 
 ---
 
@@ -281,6 +287,21 @@ cd ~/.openclaw/workspace/skills/metersphere
 4. 步骤
 5. 缺陷
 6. 评审记录
+
+### 8.6 缺陷草稿、附件与指派
+
+```bash
+# 显示默认模板的成员字段和可选择人员
+./scripts/ms.sh bug members <projectId>
+
+# 用 references/ai-bug-prompt.md 优化原始问题后生成提交预览
+./scripts/ms.sh bug prepare <projectId> ./raw-bug.json > ./prepared-bug.json
+
+# 审核 prepared-bug.json，并获得明确确认后才执行：
+./scripts/ms.sh bug submit ./prepared-bug.json --confirm
+```
+
+`raw-bug.json` 应包含标题、前置条件、复现步骤、实际结果、预期结果、环境、附件路径、与附件一一对应的可选截图说明，以及可选的处理人。`prepare` 从项目缺陷模板获取必填字段和成员候选项，`submit` 用 multipart 请求同时创建缺陷和上传附件，并回读验证标题、附件名称/大小及处理人字段。默认只允许 HTTPS；内网部署如必须使用 HTTP，须在 `.env` 显式设置 `METERSPHERE_ALLOW_INSECURE_HTTP=true`。
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: metersphere
-description: 本项目将 MeterSphere REST API 与本地脚本能力整合,为 OpenClaw Agent 提供了一套高效、可复用的 Skills,支持自动生成功能用例、接口定义及接口用例,查询组织、项目、模块、用例评审与缺陷关联等信息,简化了测试资产管理流程,提升了团队的自动化效率。
+description: 本项目将 MeterSphere REST API 与本地脚本能力整合,为 OpenClaw Agent 提供了一套高效、可复用的 Skills,支持自动生成功能用例、接口定义及接口用例、基于 AI 优化草稿提交缺陷（含附件与模板成员指派）,并可查询组织、项目、模块、用例评审与缺陷关联等信息。
 environment:
   required:
     - METERSPHERE_BASE_URL
@@ -78,7 +78,33 @@ security:
 ./scripts/ms.sh functional-case generate-create <projectId> <moduleId> <templateId> <requirement-file>
 ```
 
-### 3. Swagger / OpenAPI → 接口定义 + 接口用例
+### 3. 原始问题 → 缺陷提交
+
+用于：
+
+- 把零散的故障描述整理成可复现的 Bug
+- 优化缺陷标题、前置条件、复现步骤、实际结果、预期结果
+- 上传用户明确提供的截图或附件
+- 按缺陷模板中的成员字段匹配并指派处理人
+
+**创建 Bug 是外部写操作。** 必须先展示优化后的预览并取得用户明确确认；只有得到确认才可执行 `submit --confirm`。
+
+```bash
+# 先读取模板成员字段和合法人员选项
+./scripts/ms.sh bug members <projectId>
+
+# 使用 references/ai-bug-prompt.md 优化原始内容，保存为 raw-bug.json
+./scripts/ms.sh bug prepare <projectId> ./raw-bug.json > ./prepared-bug.json
+
+# 向用户展示 prepared-bug.json 的摘要，获得明确确认后才执行
+./scripts/ms.sh bug submit ./prepared-bug.json --confirm
+```
+
+`prepare` 会读取项目的默认缺陷模板，校验必填字段，生成 `multipart/form-data` 请求所需的 `request` JSON，并验证每个附件路径存在。
+
+`submit` 会以 `request` 和重复的 `files` 表单字段调用 MeterSphere v3 `/bug/add`，随后回读 `/bug/get/{id}` 与 `/bug/attachment/list/{id}`，验证标题和附件数量。
+
+### 4. Swagger / OpenAPI → 接口定义 + 接口用例
 
 用于:
 
@@ -187,6 +213,14 @@ security:
 
 - `references/ai-functional-case-prompt.md`
 
+### 提交缺陷前
+
+先读:
+
+- `references/ai-bug-prompt.md`
+
+先执行 `bug members` 获取缺陷模板中成员字段的可选人员。若人员名不唯一，必须要求用户指定唯一用户 ID。AI 不得编造人员、严重程度、模板字段 ID、复现事实或附件路径。
+
 ### 导入 OpenAPI 后
 
 如需补断言、补异常场景、补命名,再读:
@@ -220,6 +254,22 @@ security:
 - 基于 example/schema 自动带值
 - 基础状态码断言
 
+### 缺陷草稿与提交
+
+默认能稳定完成：
+
+- 将 AI 优化后的标题、前置条件、步骤、实际/预期结果封装为缺陷正文
+- 从目标项目的默认缺陷模板加载并校验必填自定义字段
+- 通过成员类型的模板字段解析已确认的处理人
+- 将用户明确提供的本地截图作为 `files` 上传
+- 创建后回读缺陷和附件，验证标题与附件数量
+
+限制：
+
+- “自动优化”由 Agent 按 `references/ai-bug-prompt.md` 完成；脚本负责校验和安全写入，不调用外部大模型。
+- 处理人字段取决于项目缺陷模板；没有成员字段时，脚本不会猜测额外的指派 API。
+- 未能从模板识别的必填字段，必须在 `raw-bug.json` 的 `customFields` 中以 `fieldId: value` 显式提供。
+
 ### 评审与关联查询
 
 默认能稳定回答:
@@ -250,6 +300,9 @@ METERSPHERE_HEADERS_JSON=      # 额外的 HTTP 头(JSON 格式,谨慎使用)
 METERSPHERE_PROTOCOLS_JSON='["HTTP"]'  # 支持的协议
 METERSPHERE_DEFAULT_TEMPLATE_ID= # 默认模板 ID (避免使用硬编码值)
 METERSPHERE_DEFAULT_VERSION_ID=  # 默认版本 ID (避免使用硬编码值)
+METERSPHERE_BUG_TEMPLATE_ID=     # 可选：缺陷模板 ID；未设置时使用项目默认模板
+METERSPHERE_BUG_ADD_PATH=/bug/add # 可选：兼容版本差异时覆盖创建路径
+METERSPHERE_ALLOW_INSECURE_HTTP=false # 仅限可信内网 HTTP 实例；设为 true 才允许以明文传输
 ```
 
 ### 依赖要求
@@ -301,8 +354,16 @@ METERSPHERE_DEFAULT_VERSION_ID=  # 默认版本 ID (避免使用硬编码值)
   - `METERSPHERE_DEFAULT_VERSION_ID`
 - 在使用前检查并替换为正确的项目 ID
 
-### 5. 首次使用建议
-1. 复制 `.env.example` 为 `.env` 并填写实际值
+### 5. 缺陷创建确认与附件
+- `bug prepare` 只生成可审核预览，不创建外部记录
+- 预览包含请求和附件的完整性摘要；附件或请求被改动后，必须重新生成和审核预览
+- 仅在用户明确确认后才能使用 `bug submit <prepared-json> --confirm`
+- 仅上传用户明确提供的附件路径；提交前确认图片、日志不含密码、令牌、Cookie 或个人敏感信息
+- 自动优化不得虚构复现事实、严重程度、处理人或自定义字段值
+- 默认只允许 HTTPS。内网部署如必须使用 HTTP，须显式设置 `METERSPHERE_ALLOW_INSECURE_HTTP=true`，该连接会明文传输 API 签名、缺陷内容和附件
+
+### 6. 首次使用建议
+1. 复制 `skills/.env.example` 为 `skills/.env` 并填写实际值
 2. 在非生产环境或沙箱中测试
 3. 使用最小权限的凭证
 4. 检查网络流量，确认只连接到预期的 `BASE_URL`
